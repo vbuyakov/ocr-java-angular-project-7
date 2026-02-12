@@ -23,5 +23,8 @@ yarn-error.log*
 # Local configuration
 *.local
 
+# Test output (CI/CD)
+test-results/
+
 # SSL certificates (dev self-signed, prod paths)
 misc/certs/
