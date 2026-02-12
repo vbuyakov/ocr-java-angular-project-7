@@ -1,0 +1,19 @@
+# Production overlay: real domain, SSL certificates from host
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Set SSL_CERT_PATH and SSL_KEY_PATH in .env (e.g. Let's Encrypt fullchain.pem, privkey.pem)
+
+services:
+  nginx:
+    configs:
+      - source: nginx_ssl
+        target: /etc/nginx/nginx.conf
+    ports:
+      - "${APP_PORT:-443}:443"
+      - "${APP_HTTP_PORT:-80}:80"
+    volumes:
+      - ${SSL_CERT_PATH}:/etc/nginx/certs/fullchain.pem:ro
+      - ${SSL_KEY_PATH}:/etc/nginx/certs/privkey.pem:ro
+
+configs:
+  nginx_ssl:
+    file: misc/docker/nginx-ssl.conf

@@ -1,0 +1,18 @@
+# Development overlay: self-signed SSL, local domain (microcrm.local)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Run misc/docker/generate-dev-certs.sh first to create certificates
+
+services:
+  nginx:
+    configs:
+      - source: nginx_ssl
+        target: /etc/nginx/nginx.conf
+    ports:
+      - "${APP_PORT:-443}:443"
+      - "${APP_HTTP_PORT:-80}:80"
+    volumes:
+      - ./misc/certs/dev:/etc/nginx/certs:ro
+
+configs:
+  nginx_ssl:
+    file: misc/docker/nginx-ssl.conf
