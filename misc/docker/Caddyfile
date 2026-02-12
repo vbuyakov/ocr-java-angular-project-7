@@ -1,4 +1,5 @@
-* {
+# Explicitly HTTP only - Caddy auto-redirects to HTTPS by default, which breaks when behind nginx
+http://:80 {
 	root * /app/front
 	encode gzip
 	try_files {path} /index.html

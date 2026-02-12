@@ -169,42 +169,22 @@ cp .env.example .env
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `SPRING_APP_NAME` | Nom de l'application Spring Boot | `microcrm` |
-| `APP_PORT` | Port HTTP exposé par nginx (base) | `80` |
-| `APP_HTTP_PORT` | Port HTTP pour redirect (dev/prod) | `80` |
-| `APP_PORT` (dev/prod) | Port HTTPS exposé | `443` |
+| `APP_PORT` | Port HTTP exposé par nginx | `80` |
 | `DOCKER_NETWORK` | Nom du réseau Docker | `orion-microcrm_network` |
 | `DOCKER_NETWORK_EXTERNAL` | `true` si le réseau existe déjà (multi-apps) | `false` |
-| `SSL_CERT_PATH` | Chemin du certificat SSL (prod) | — |
-| `SSL_KEY_PATH` | Chemin de la clé privée SSL (prod) | — |
 
 #### Lancer l'application
 
-**Base (HTTP seul) :**
+**Base :**
 
 ```shell
 docker compose up -d
 ```
 
-**Dev (SSL auto-signé, microcrm.local) :**
+**Dev (port personnalisable) :**
 
 ```shell
-./misc/docker/generate-dev-certs.sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-Ajoutez à `/etc/hosts` : `127.0.0.1 microcrm.local`
-
-**Prod (domaine réel, certificats SSL) :**
-
-```shell
-# Définir SSL_CERT_PATH et SSL_KEY_PATH dans .env
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-**Derrière un reverse proxy externe (Traefik, Caddy) :**
-
-```shell
-docker network create orion-microcrm_network
-# Dans .env : DOCKER_NETWORK=orion-microcrm_network, DOCKER_NETWORK_EXTERNAL=true
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.proxy.yml up -d
-```
+Accès sur http://localhost

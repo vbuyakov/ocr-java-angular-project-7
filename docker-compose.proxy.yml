@@ -1,9 +1,0 @@
-# Use behind external reverse proxy (Traefik, Caddy, etc.) - no host port binding
-# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.proxy.yml up -d
-# Create shared network first: docker network create web
-# Set in .env: DOCKER_NETWORK=web, DOCKER_NETWORK_EXTERNAL=true
-# External proxy must attach to the same "web" network to route by domain (e.g. p7-crm.buyakov.com)
-
-services:
-  nginx:
-    ports: []
