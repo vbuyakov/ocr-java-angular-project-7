@@ -124,7 +124,7 @@ jobs:
 
       - name: Build and run SonarQube analysis (backend)
         run: |
-          cd back && ./gradlew sonar \
+          cd back && ./gradlew build sonar -x test \
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.host.url=https://sonarcloud.io \
