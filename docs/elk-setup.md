@@ -36,7 +36,7 @@ Sur un serveur avec plusieurs ELK (un par projet), définir pour chaque projet�
 |----------|--------|-------------|
 | `ELK_PROJECT` | `ocr-ja7` | Préfixe des conteneurs et réseaux |
 | `KIBANA_PORT` | `5601` | Port hôte pour Kibana |
-| `ELASTIC_PASSWORD` | — | **Requis.** Mot de passe de l'utilisateur `elastic` (ES, Kibana, Logstash) |
+| `ELASTIC_PASSWORD` | — | Mot de passe (elastic, kibana_system). Connexion Kibana : `elastic` |
 
 Exemple pour le 2ᵉ projet :
 
@@ -55,16 +55,13 @@ Adapter dans Nginx : `proxy_pass http://127.0.0.1:5602`.
 
 ---
 
-## Sécurité (xpack)
+## Sécurité (built-in users)
 
-La stack utilise xpack.security avec authentification :
-- **Elasticsearch** : `elastic` / `ELASTIC_PASSWORD`
-- **Kibana** : se connecte à ES avec ces identifiants
-- **Logstash** : envoie les logs à ES avec ces identifiants
+- **Kibana** : `kibana_system`
+- **Logstash** : `logstash_system`
+- **Connexion Kibana** : `elastic` (superuser, uniquement pour l'UI)
 
-Définir `ELASTIC_PASSWORD` dans `.env` avant le premier démarrage. Pour se connecter à Kibana, utiliser `elastic` et le mot de passe défini.
-
-**Migration depuis une config sans sécurité** : supprimer le volume Elasticsearch existant puis redémarrer (`docker compose -f docker-compose-elk.yml down -v` puis `up -d`).
+`elk-setup` configure les mots de passe de `kibana_system` et `logstash_system` au démarrage. Définir `ELASTIC_PASSWORD` dans `.env`. [Built-in users](https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html)
 
 ---
 

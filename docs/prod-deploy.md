@@ -27,7 +27,7 @@ Chaque projet doit avoir son propre `ELK_PROJECT` et `KIBANA_PORT`. Dans Nginx, 
 - Accès au registre GHCR (token GitHub avec `read:packages`)
 - Nginx installé sur l’hôte pour SSL et routage des domaines
 - ~4 Go RAM disponibles pour ELK
-- ELK : `ELASTIC_PASSWORD` dans `.env` (mot de passe utilisateur `elastic`)
+- ELK : `ELASTIC_PASSWORD` dans `.env`
 
 ---
 
