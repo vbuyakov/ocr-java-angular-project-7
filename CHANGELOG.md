@@ -2,6 +2,13 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+## [1.0.1](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.0.0...v1.0.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* ci files for deploy ([b5055af](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/b5055afb887256d210b2e17b9334a6d3c114bd94))
+
 # 1.0.0 (2026-02-16)
 
 
