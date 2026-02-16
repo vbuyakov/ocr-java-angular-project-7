@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 #
-# Start application + ELK stack on production server.
-# Usage: ./prod-up.sh [--app-only | --elk-only]
+# Start or restart application + ELK stack on production server.
+# Usage: ./prod-up.sh [--app-only | --elk-only] [--restart]
 # Run from project root.
 #
 # Prerequisites:
@@ -15,18 +15,31 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
 cd "${PROJECT_ROOT}"
 
+# Support both docker compose (v2) and docker-compose (v1)
+if docker compose version >/dev/null 2>&1; then
+  DCOMPOSE="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+  DCOMPOSE="docker-compose"
+else
+  echo "Error: docker compose or docker-compose required" >&2
+  exit 1
+fi
+
 APP_ONLY=false
 ELK_ONLY=false
+RESTART=false
 
 for arg in "$@"; do
   case "$arg" in
     --app-only) APP_ONLY=true ;;
     --elk-only) ELK_ONLY=true ;;
+    --restart) RESTART=true ;;
     -h|--help)
-      echo "Usage: $0 [--app-only | --elk-only]"
-      echo "  (no args)  - Start app + ELK"
+      echo "Usage: $0 [--app-only | --elk-only] [--restart]"
+      echo "  (no args)   - Start app + ELK (pull images for app)"
       echo "  --app-only - Start app only"
       echo "  --elk-only - Start ELK stack only"
+      echo "  --restart  - Restart without pulling (apply config changes)"
       exit 0
       ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
@@ -39,15 +52,17 @@ if [ "${APP_ONLY}" = true ] && [ "${ELK_ONLY}" = true ]; then
 fi
 
 start_app() {
-  echo "[prod-up] Pulling app images..."
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+  if [ "${RESTART}" = false ]; then
+    echo "[prod-up] Pulling app images..."
+    $DCOMPOSE -f docker-compose.yml -f docker-compose.prod.yml pull
+  fi
   echo "[prod-up] Starting app..."
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+  $DCOMPOSE -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 }
 
 start_elk() {
   echo "[prod-up] Starting ELK stack..."
-  docker compose -f docker-compose-elk.yml up -d
+  $DCOMPOSE -f docker-compose-elk.yml up -d
 }
 
 if [ "${ELK_ONLY}" = true ]; then
@@ -59,5 +74,5 @@ else
   start_elk
 fi
 
-echo "[prod-up] Done. Check: docker compose -f docker-compose.yml -f docker-compose.prod.yml ps"
-echo "[prod-up] ELK:      docker compose -f docker-compose-elk.yml ps"
+echo "[prod-up] Done. Check: $DCOMPOSE -f docker-compose.yml -f docker-compose.prod.yml ps"
+echo "[prod-up] ELK:       $DCOMPOSE -f docker-compose-elk.yml ps"

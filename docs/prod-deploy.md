@@ -23,9 +23,11 @@ Chaque projet doit avoir son propre `ELK_PROJECT` et `KIBANA_PORT`. Dans Nginx, 
 ## Prérequis
 
 - Docker et Docker Compose installés
+  - Si `docker compose` échoue avec « unknown shorthand flag: 'f' » : `sudo apt install docker-compose-plugin`
 - Accès au registre GHCR (token GitHub avec `read:packages`)
 - Nginx installé sur l’hôte pour SSL et routage des domaines
 - ~4 Go RAM disponibles pour ELK
+- ELK : `ELASTIC_PASSWORD` dans `.env` (mot de passe utilisateur `elastic`)
 
 ---
 
@@ -54,9 +56,10 @@ Options du script :
 
 | Commande | Effet |
 |----------|-------|
-| `./misc/cicd/prod-up.sh` | App + ELK |
+| `./misc/cicd/prod-up.sh` | App + ELK (pull images) |
 | `./misc/cicd/prod-up.sh --app-only` | Application uniquement |
 | `./misc/cicd/prod-up.sh --elk-only` | Stack ELK uniquement |
+| `./misc/cicd/prod-up.sh --restart` | Redémarrer sans pull (appliquer changements config) |
 
 ---
 
@@ -174,13 +177,46 @@ L’hôte Nginx termine le SSL et achemine vers :
 
 **Étapes :**
 
-1. `sudo apt install nginx`
-2. `sudo mkdir -p /var/www/certbot`
-3. Copier : `sudo cp misc/docker/nginx-ocr-ja7.conf /etc/nginx/sites-available/ocr-ja7` puis idem pour `misc/elk/nginx-ocr-ja7-elk.conf` → `ocr-ja7-elk`
-4. Activer : `sudo ln -sf /etc/nginx/sites-available/ocr-ja7 /etc/nginx/sites-enabled/` (idem ocr-ja7-elk)
-5. Certificats SSL (section ci-dessus)
-6. `APP_PORT=8080` dans `.env` pour éviter conflit avec Nginx
-7. `sudo nginx -t && sudo systemctl reload nginx`
+1. Installer Nginx
+
+```bash
+sudo apt install nginx
+```
+
+2. Créer le répertoire Certbot
+
+```bash
+sudo mkdir -p /var/www/certbot
+```
+
+3. Copier les configurations (depuis la racine du projet)
+
+```bash
+sudo cp misc/docker/nginx-ocr-ja7.conf /etc/nginx/sites-available/ocr-ja7
+sudo cp misc/elk/nginx-ocr-ja7-elk.conf /etc/nginx/sites-available/ocr-ja7-elk
+```
+
+4. Activer les sites
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/ocr-ja7 /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/ocr-ja7-elk /etc/nginx/sites-enabled/
+```
+
+5. Obtenir les certificats SSL (voir section Certificats SSL ci-dessus)
+
+6. Définir `APP_PORT=8080` dans `.env` pour éviter conflit avec Nginx
+
+```bash
+# Ajouter ou modifier dans .env
+APP_PORT=8080
+```
+
+7. Tester et recharger Nginx
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
 
 ---
 
