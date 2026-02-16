@@ -11,4 +11,5 @@ COPY --from=build /src/dist/microcrm/browser /app/front
 COPY ./misc/docker/Caddyfile /app/Caddyfile
 WORKDIR /app
 EXPOSE 80
+# Caddy binding to :80 requires root; run as root in isolated container
 CMD ["caddy", "run", "--config", "/app/Caddyfile"]

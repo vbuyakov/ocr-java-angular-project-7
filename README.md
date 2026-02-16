@@ -156,7 +156,7 @@ L'application sera disponible sur https://localhost et l'API sur http://localhos
 
 ### Docker Compose
 
-L'application peut être lancée avec Docker Compose (backend, frontend et nginx en tant que reverse proxy).
+L'application peut être lancée avec Docker Compose (backend, frontend et nginx en tant que reverse proxy). Pour les choix techniques et les bonnes pratiques de sécurité, voir [docs/docker.md](docs/docker.md).
 
 #### Configuration (.env)
 

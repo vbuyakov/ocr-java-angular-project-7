@@ -87,6 +87,8 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 
 ## 3. Principes de conteneurisation et de déploiement
 
+> **Documentation détaillée** : voir [docs/docker.md](docker.md) pour les choix techniques, les bonnes pratiques de sécurité et le scanning des images.
+
 ### 3.1 Rôle des Dockerfiles existants
 
 | Dockerfile | Rôle | Usage |
