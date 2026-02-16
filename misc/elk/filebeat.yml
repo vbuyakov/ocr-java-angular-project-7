@@ -1,0 +1,35 @@
+# Filebeat - collect Docker container logs (Caddy, Spring Boot)
+# Sends to Logstash for processing and indexing in Elasticsearch
+
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    stream: all
+    format: docker
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            not:
+              or:
+                - contains:
+                    docker.container.name: "back"
+                - contains:
+                    docker.container.name: "front"
+
+filebeat.autodiscover:
+  enabled: false
+
+# Output to Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
+
+# Disable ES output (Logstash handles indexing)
+output.elasticsearch:
+  enabled: false
+
+# Logging
+logging.level: info
+logging.to_files: false
