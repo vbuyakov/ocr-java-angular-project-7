@@ -18,11 +18,12 @@ Ce document décrit comment configurer le pipeline CI avec GitHub Actions et l'i
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| `SONAR_ORGANIZATION` | Clé de l'organisation SonarCloud (visible dans l'URL : sonarcloud.io/organizations/xxx) | `my-org` |
-| `SONAR_PROJECT_KEY_BACK` | Clé du projet backend dans SonarCloud | `orion-microcrm-back` |
-| `SONAR_PROJECT_KEY_FRONT` | Clé du projet frontend dans SonarCloud | `orion-microcrm-front` |
+| `SONAR_ORGANIZATION` | Clé de l'organisation SonarCloud (visible dans l'URL : sonarcloud.io/organizations/xxx) | `viktor-buiakov` |
+| `SONAR_PROJECT_KEY` | Clé du projet SonarCloud (un seul projet pour le monorepo back+front) | `viktor-buiakov_ocr-java-angular-project-7` |
 
 **Comportement** : si `SONAR_ORGANIZATION` est vide, les jobs SonarQube sont ignorés (le pipeline reste utilisable sans SonarCloud).
+
+**Monorepo** : back et front envoient leurs analyses vers le **même projet** SonarCloud, qui agrège les résultats.
 
 ---
 
@@ -35,24 +36,21 @@ Ce document décrit comment configurer le pipeline CI avec GitHub Actions et l'i
 3. Créez une organisation (ou utilisez celle par défaut)
 4. Notez la clé de l'organisation (dans l'URL ou Administration)
 
-### 2.2 Importer le dépôt et créer les projets
+### 2.2 Importer le dépôt et créer le projet
 
-1. Dans SonarCloud : **Add new project** → **Import from GitHub**
-2. Sélectionnez le dépôt `orion-microcrm` (ou le nom de votre repo)
-3. SonarCloud propose de créer un projet. Pour un **monorepo** (back + front), créez **deux projets** :
-   - **Projet Backend** : clé `orion-microcrm-back` (ou `votre-org_orion-microcrm-back`)
-   - **Projet Frontend** : clé `orion-microcrm-front` (ou `votre-org_orion-microcrm-front`)
+1. Dans SonarCloud : **Add new project** (icône +) → **Import from GitHub**
+2. Sélectionnez le dépôt (ex. `app` ou le nom de votre repo)
+3. SonarCloud propose de créer **un projet** pour le monorepo
 4. Lors de la création, choisissez **With GitHub Actions** comme méthode d'analyse
-5. Pour chaque projet, SonarCloud affiche un **token** : copiez-le et enregistrez-le dans le secret GitHub `SONAR_TOKEN`
+5. Notez la **Project Key** (ex. `viktor-buiakov_ocr-java-angular-project-7`) et configurez-la dans la variable `SONAR_PROJECT_KEY`
+6. SonarCloud affiche un **token** : copiez-le et enregistrez-le dans le secret GitHub `SONAR_TOKEN`
 
-**Important** : un seul token SonarCloud peut couvrir plusieurs projets de la même organisation. Utilisez le token fourni lors de la configuration du premier projet.
+**Monorepo** : back et front envoient leurs analyses vers ce même projet. SonarCloud agrège automatiquement les résultats.
 
-### 2.3 Configuration des projets dans SonarCloud
-
-Pour chaque projet (backend, frontend) :
+### 2.3 Configuration du projet dans SonarCloud
 
 1. Allez dans **Project Settings** → **General Settings**
-2. Vérifiez que la **Project Key** correspond aux variables `SONAR_PROJECT_KEY_BACK` et `SONAR_PROJECT_KEY_FRONT`
+2. Vérifiez que la **Project Key** correspond à la variable `SONAR_PROJECT_KEY`
 3. (Optionnel) Configurez les **Quality Gates** et **Quality Profiles** selon vos exigences
 4. (Optionnel) Dans **Administration** → **Analysis Method**, vérifiez que l'analyse est configurée pour GitHub Actions
 
@@ -63,7 +61,7 @@ Pour chaque projet (backend, frontend) :
 ### 3.1 Fonctionnement
 
 1. À chaque **push** et **Pull Request**, le pipeline CI s'exécute
-2. Les jobs **sonarqube-back** et **sonarqube-front** envoient les résultats à SonarCloud
+2. Les jobs **sonarqube-back** et **sonarqube-front** envoient les résultats vers le même projet SonarCloud
 3. SonarCloud publie un **rapport de qualité** et un **statut de Quality Gate** (pass/fail) comme **check GitHub**
 4. Ce check apparaît dans l'onglet **Checks** de la PR et sur le dernier commit
 
@@ -112,6 +110,6 @@ Dès lors, une PR ne pourra pas être mergée si l'un de ces checks est en éche
 | Problème | Solution |
 |----------|----------|
 | `SONAR_TOKEN` invalid | Régénérez le token dans SonarCloud (My Account → Security → Generate Tokens) |
-| Projet non trouvé | Vérifiez `SONAR_PROJECT_KEY_*` et `SONAR_ORGANIZATION` |
+| Projet non trouvé | Vérifiez `SONAR_PROJECT_KEY` et `SONAR_ORGANIZATION` |
 | Jobs SonarQube non exécutés | Vérifiez que `SONAR_ORGANIZATION` est défini (variable non vide) |
 | Quality Gate toujours rouge | Ajustez les seuils dans SonarCloud ou corrigez le code pour respecter les règles |
