@@ -93,6 +93,8 @@ Le fichier `.dockerignore` exclut les répertoires inutiles (`.gradle`, `build`,
 
 ### Démarrage
 
+**En développement** (build local à partir des Dockerfiles) :
+
 ```bash
 # Build et démarrage
 docker compose up -d
@@ -100,6 +102,26 @@ docker compose up -d
 # Ou avec build explicite
 docker compose build --no-cache
 docker compose up -d
+```
+
+**En production** (images pré-construites depuis GHCR) :
+
+```bash
+# Connexion au registre (une fois, avec un PAT ayant read:packages)
+docker login ghcr.io -u vbuyakov
+
+# Récupération des images puis démarrage
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+```
+
+Pour figer une version en production (ex. `v1.0.1`) :
+
+```bash
+BACK_IMAGE=ghcr.io/vbuyakov/ocr-java-angular-project-7-back:v1.0.1 \
+FRONT_IMAGE=ghcr.io/vbuyakov/ocr-java-angular-project-7-front:v1.0.1 \
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 ```
 
 ### Variables d’environnement
@@ -110,6 +132,8 @@ docker compose up -d
 | `SPRING_APP_NAME` | `microcrm` | Nom de l’application Spring |
 | `DOCKER_NETWORK` | `orion-microcrm_network` | Nom du réseau Docker |
 | `DOCKER_NETWORK_EXTERNAL` | `false` | Si `true`, le réseau doit déjà exister |
+| `BACK_IMAGE` | `ghcr.io/...-back:latest` | Image backend (prod overlay) |
+| `FRONT_IMAGE` | `ghcr.io/...-front:latest` | Image frontend (prod overlay) |
 
 ---
 

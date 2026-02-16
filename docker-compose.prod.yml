@@ -1,0 +1,18 @@
+# Production overlay: use pre-built images from GHCR instead of building
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#        docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+#
+# Requires: docker login ghcr.io (use a Personal Access Token with read:packages)
+#
+# Pin a specific version via env:
+#   BACK_IMAGE=ghcr.io/vbuyakov/ocr-java-angular-project-7-back:v1.0.1 \
+#   FRONT_IMAGE=ghcr.io/vbuyakov/ocr-java-angular-project-7-front:v1.0.1 \
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+
+services:
+  back:
+    image: ${BACK_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-back:latest}
+
+  front:
+    image: ${FRONT_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-front:latest}
