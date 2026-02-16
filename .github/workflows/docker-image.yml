@@ -1,10 +1,9 @@
 name: Docker Image CI
 
+# Only on release (tag v*) to save Actions minutes. No build on push/PR.
 on:
   push:
-    branches: ['main']
-  pull_request:
-    branches: ['main']
+    tags: ['v*']
   workflow_dispatch:
 
 env:
@@ -12,40 +11,9 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
-  build:
-    name: Build Docker images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: back/Dockerfile
-          push: false
-          tags: ${{ github.event.repository.name }}-back:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha
-
-      - name: Build frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: front/Dockerfile
-          push: false
-          tags: ${{ github.event.repository.name }}-front:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha
-
   publish:
-    name: Publish to GHCR
+    name: Build and publish to GHCR
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -69,7 +37,7 @@ jobs:
           file: back/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-back:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-back:${{ github.ref_name }}
             ${{ env.IMAGE_PREFIX }}-back:latest
           cache-from: type=gha
           cache-to: type=gha
@@ -81,7 +49,7 @@ jobs:
           file: front/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-front:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-front:${{ github.ref_name }}
             ${{ env.IMAGE_PREFIX }}-front:latest
           cache-from: type=gha
           cache-to: type=gha

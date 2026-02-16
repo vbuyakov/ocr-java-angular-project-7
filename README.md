@@ -192,3 +192,7 @@ Accès sur http://localhost
 #### Pipeline CD (images Docker)
 
 Les images sont construites et publiées automatiquement vers **GitHub Container Registry** (ghcr.io) via le workflow [docker-image.yml](.github/workflows/docker-image.yml). Voir [docs/cd-setup.md](docs/cd-setup.md) pour la configuration.
+
+#### Releases (semantic-release)
+
+Les releases GitHub sont créées automatiquement sur push vers `main` via le workflow [release.yml](.github/workflows/release.yml). Règles de commit et workflow détaillé : [docs/release-workflow.md](docs/release-workflow.md).

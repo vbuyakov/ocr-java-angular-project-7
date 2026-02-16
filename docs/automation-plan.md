@@ -131,5 +131,6 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 | **Sécurité** | Secrets centralisés, analyse SonarQube, images de base maintenues | Réduction des risques sans complexifier excessivement le pipeline |
 | **Conteneurs** | Dockerfiles séparés + docker-compose pour l’orchestration | Meilleure modularité et reproductibilité des environnements |
 | **Publication** | Workflow `docker-image.yml` : build sur push/PR, push GHCR (ghcr.io) sur `main` | Voir [docs/cd-setup.md](cd-setup.md) |
+| **Releases** | Workflow `release.yml` : semantic-release sur `main`, tags vX.Y.Z, CHANGELOG. Images Docker publiées via `docker-image.yml` sur tag v* | Voir [docs/release-workflow.md](release-workflow.md) |
 
 Ces plans précèdent toute mise en œuvre technique et restent réalistes pour un projet de taille modeste (monorepo back + front, déploiement sur un ou quelques serveurs).

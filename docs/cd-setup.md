@@ -70,6 +70,8 @@ Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Acti
 
 `{owner}` = organisation ou utilisateur GitHub. `{repo}` = nom du dépôt. L'image nginx n'est pas publiée (docker-compose utilise `nginx:alpine`).
 
+**Note** : Le workflow ne s'exécute que sur tag `v*` (créé par semantic-release) ou `workflow_dispatch`. Aucune exécution sur push/PR pour limiter l'usage des Actions (free tier).
+
 ---
 
 ## 5. Ordre d’exécution
