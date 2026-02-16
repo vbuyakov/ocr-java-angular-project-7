@@ -1,0 +1,55 @@
+name: Docker Image CI
+
+# Only on release (tag v*) to save Actions minutes. No build on push/PR.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+
+jobs:
+  publish:
+    name: Build and publish to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: back/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-back:${{ github.ref_name }}
+            ${{ env.IMAGE_PREFIX }}-back:latest
+          cache-from: type=gha
+          cache-to: type=gha
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: front/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-front:${{ github.ref_name }}
+            ${{ env.IMAGE_PREFIX }}-front:latest
+          cache-from: type=gha
+          cache-to: type=gha

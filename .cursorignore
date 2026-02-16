@@ -1,0 +1,15 @@
+# Dependencies
+front/node_modules/
+
+# Build outputs
+back/build/
+front/dist/
+front/out-tsc/
+
+# Caches
+back/.gradle/
+front/.angular/
+
+# Coverage and test outputs
+coverage/
+*.lcov

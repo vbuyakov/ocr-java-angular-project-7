@@ -1,0 +1,44 @@
+name: orion-microcrm
+
+services:
+  back:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    environment:
+      SPRING_APPLICATION_NAME: ${SPRING_APP_NAME:-microcrm}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/profile"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - orioncrm
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    depends_on:
+      back:
+        condition: service_healthy
+    networks:
+      - orioncrm
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./misc/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${APP_PORT:-80}:80"
+    depends_on:
+      - back
+      - front
+    networks:
+      - orioncrm
+
+networks:
+  orioncrm:
+    name: ${DOCKER_NETWORK:-orion-microcrm_network}
+    external: ${DOCKER_NETWORK_EXTERNAL:-false}

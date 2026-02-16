@@ -1,0 +1,8 @@
+# Development overlay: plain HTTP, no SSL
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Access at http://localhost
+
+services:
+  nginx:
+    ports:
+      - "${APP_PORT:-80}:80"

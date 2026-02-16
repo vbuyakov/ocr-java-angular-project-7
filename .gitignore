@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# IDE and editors
+.vscode/
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local configuration
+*.local
+
+# Test output (CI/CD)
+test-results/
+
+# SSL certificates (dev self-signed, prod paths)
+misc/certs/

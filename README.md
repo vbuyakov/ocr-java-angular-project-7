@@ -153,3 +153,46 @@ docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:l
 ```
 
 L'application sera disponible sur https://localhost et l'API sur http://localhost:8080.
+
+### Docker Compose
+
+L'application peut être lancée avec Docker Compose (backend, frontend et nginx en tant que reverse proxy). Pour les choix techniques et les bonnes pratiques de sécurité, voir [docs/docker.md](docs/docker.md).
+
+#### Configuration (.env)
+
+Copiez `.env.example` vers `.env` et adaptez les valeurs :
+
+```shell
+cp .env.example .env
+```
+
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `SPRING_APP_NAME` | Nom de l'application Spring Boot | `microcrm` |
+| `APP_PORT` | Port HTTP exposé par nginx | `80` |
+| `DOCKER_NETWORK` | Nom du réseau Docker | `orion-microcrm_network` |
+| `DOCKER_NETWORK_EXTERNAL` | `true` si le réseau existe déjà (multi-apps) | `false` |
+
+#### Lancer l'application
+
+**Base :**
+
+```shell
+docker compose up -d
+```
+
+**Dev (port personnalisable) :**
+
+```shell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+Accès sur http://localhost
+
+#### Pipeline CD (images Docker)
+
+Les images sont construites et publiées automatiquement vers **GitHub Container Registry** (ghcr.io) via le workflow [docker-image.yml](.github/workflows/docker-image.yml). Voir [docs/cd-setup.md](docs/cd-setup.md) pour la configuration.
+
+#### Releases (semantic-release)
+
+Les releases GitHub sont créées automatiquement sur push vers `main` via le workflow [release.yml](.github/workflows/release.yml). Règles de commit et workflow détaillé : [docs/release-workflow.md](docs/release-workflow.md).
