@@ -188,3 +188,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
 Accès sur http://localhost
+
+#### Pipeline CD (images Docker)
+
+Les images sont construites et publiées automatiquement vers **GitHub Container Registry** (ghcr.io) via le workflow [docker-image.yml](.github/workflows/docker-image.yml). Voir [docs/cd-setup.md](docs/cd-setup.md) pour la configuration.

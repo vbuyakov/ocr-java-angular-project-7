@@ -10,7 +10,7 @@ L’application Orion MicroCRM est conteneurisée pour faciliter le déploiement
 
 | Service | Image de build | Image d’exécution | Rôle |
 |--------|----------------|-------------------|------|
-| **back** | eclipse-temurin:17-jdk-alpine | eclipse-temurin:17-jre-alpine | API Spring Boot |
+| **back** | eclipse-temurin:17-jdk | eclipse-temurin:17-jre | API Spring Boot |
 | **front** | node:20-alpine | alpine:3.19 + Caddy | Angular + reverse-proxy |
 | **nginx** | — | nginx:alpine | Reverse-proxy principal |
 
@@ -20,9 +20,9 @@ L’application Orion MicroCRM est conteneurisée pour faciliter le déploiement
 
 ### Backend (Java)
 
-- **eclipse-temurin:17-jdk-alpine** (build) et **eclipse-temurin:17-jre-alpine** (run)
+- **eclipse-temurin:17-jdk** (build) et **eclipse-temurin:17-jre** (run)
   - **Temurin** : distribution OpenJDK maintenue par l’Eclipse Adoptium Project (ex-AdoptOpenJDK), largement utilisée en production.
-  - **Alpine** : image minimale, surface d’attaque réduite, mises à jour régulières.
+  - **Debian** : support multi-plateforme (amd64, arm64), contrairement aux variantes Alpine limitées à amd64.
   - **JRE** en exécution : pas de JDK en production, image plus légère.
 
 ### Frontend (Angular + Caddy)
@@ -43,7 +43,7 @@ L’application Orion MicroCRM est conteneurisée pour faciliter le déploiement
 Le backend Spring Boot s’exécute avec un utilisateur non-root (`appuser` / `appgroup`) pour limiter les impacts en cas de compromission :
 
 ```dockerfile
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 COPY --from=build --chown=appuser:appgroup ...
 USER appuser
 ```

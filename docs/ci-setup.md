@@ -11,10 +11,8 @@ Ce document décrit comment configurer le pipeline CI avec GitHub Actions et l'i
 | Secret | Description | Obligatoire pour |
 |--------|-------------|------------------|
 | `SONAR_TOKEN` | Token d'authentification SonarCloud (généré depuis sonarcloud.io) | Analyse qualité |
-| `DOCKERHUB_USERNAME` | Nom d'utilisateur Docker Hub | Publication des images |
-| `DOCKERHUB_TOKEN` | Token d'accès Docker Hub (Access Token, pas le mot de passe) | Publication des images |
 
-**Note** : `GITHUB_TOKEN` est fourni automatiquement par GitHub Actions, inutile de le créer.
+**Note** : `GITHUB_TOKEN` est fourni automatiquement par GitHub Actions. Le workflow `docker-image.yml` utilise ce token pour publier les images vers GitHub Container Registry (ghcr.io) ; aucun secret supplémentaire n'est requis.
 
 ### 1.2 Variables (Settings → Secrets and variables → Actions → Variables)
 
@@ -104,8 +102,8 @@ Dès lors, une PR ne pourra pas être mergée si l'un de ces checks est en éche
 | Build Frontend | après test-front | npm `build --configuration=production` |
 | SonarQube Backend | après build-back | Analyse Gradle + SonarQube plugin |
 | SonarQube Frontend | après build-front | SonarQube Scan Action sur `front/` |
-| Build Docker | après builds | Build des images (sans push) |
-| Publish | push sur `main` | Push des images vers Docker Hub |
+
+**Pipeline CD (images Docker)** : voir [docs/cd-setup.md](cd-setup.md) pour la construction et la publication des images.
 
 ---
 

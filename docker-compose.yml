@@ -27,9 +27,9 @@ services:
       - orioncrm
 
   nginx:
-    build:
-      context: misc/docker
-      dockerfile: Dockerfile.nginx
+    image: nginx:alpine
+    volumes:
+      - ./misc/docker/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "${APP_PORT:-80}:80"
     depends_on:

@@ -78,7 +78,7 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 
 | Pratique | Implémentation |
 |----------|----------------|
-| **Gestion des secrets** | Utiliser les GitHub Secrets (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, tokens SonarQube). Jamais de secrets dans le code ou les logs. |
+| **Gestion des secrets** | Utiliser les GitHub Secrets (tokens SonarQube). GHCR utilise GITHUB_TOKEN. Jamais de secrets dans le code ou les logs. |
 | **Dépendances** | `npm ci` (reproductible) et `./gradlew --no-daemon` (isolation). `npm audit` et `./gradlew dependencyCheck` en option pour détecter les vulnérabilités. |
 | **Images de base** | Utiliser des images Alpine ou distroless officielles, maintenues régulièrement. |
 | **Privilèges** | Réduire les permissions des workflows au minimum (ex. : `permissions: contents: write` uniquement pour publish). |
@@ -114,7 +114,7 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 | Phase | Action |
 |-------|--------|
 | **Build** | À chaque push, build des images Docker (back, front, nginx) sans push |
-| **Publication** | Sur push vers `main` : semantic-release pour le versioning, puis build et push des images vers Docker Hub |
+| **Publication** | Sur push vers `main` : build et push des images vers GHCR (ghcr.io) |
 | **Tags** | `latest`, SHA du commit, version sémantique (ex. `v1.2.3`) si release |
 | **Plateformes** | Multi-arch (`linux/amd64`, `linux/arm64`) pour compatibilité x86 et ARM |
 
@@ -130,6 +130,6 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 | **CI** | Tests obligatoires sur push et PR, build conditionnel | Évite de merger du code cassé, limite la charge sur les branches de feature |
 | **Sécurité** | Secrets centralisés, analyse SonarQube, images de base maintenues | Réduction des risques sans complexifier excessivement le pipeline |
 | **Conteneurs** | Dockerfiles séparés + docker-compose pour l’orchestration | Meilleure modularité et reproductibilité des environnements |
-| **Publication** | semantic-release + Docker Hub, uniquement sur `main` | Versioning cohérent et traçabilité des artefacts |
+| **Publication** | Workflow `docker-image.yml` : build sur push/PR, push GHCR (ghcr.io) sur `main` | Voir [docs/cd-setup.md](cd-setup.md) |
 
 Ces plans précèdent toute mise en œuvre technique et restent réalistes pour un projet de taille modeste (monorepo back + front, déploiement sur un ou quelques serveurs).
