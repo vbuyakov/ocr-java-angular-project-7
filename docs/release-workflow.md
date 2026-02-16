@@ -71,7 +71,7 @@ chore(deps): upgrade Angular
 ### Déclenchement
 
 - **Branche** : uniquement `main`
-- **Événement** : push sur `main` (ou `workflow_dispatch` pour lancer manuellement)
+- **Événement** : Release s'exécute après succès de la CI sur `main` (ou `workflow_dispatch`)
 - **Tag** : créé uniquement sur `main` après une release réussie
 
 ### Flux d’exécution
@@ -79,6 +79,11 @@ chore(deps): upgrade Angular
 ```
 Push sur main
       │
+      ▼
+┌─────────────────────┐
+│ Workflow: CI       │  ← Tests, build, SonarQube
+└─────────────────────┘
+      │ (si succès)
       ▼
 ┌─────────────────────┐
 │ Workflow: Release   │
@@ -109,7 +114,7 @@ Push sur main
 | Question | Réponse |
 |----------|---------|
 | **Release candidate par commit ?** | Non. Une release (stable) est créée uniquement quand il existe des commits `feat`, `fix`, `perf` ou `BREAKING` depuis la dernière release. Les commits `docs`, `chore`, etc. n’induisent pas de nouvelle version. |
-| **Action humaine requise ?** | Non pour le déclenchement. Le push sur `main` suffit. On peut toutefois lancer manuellement via `workflow_dispatch`. |
+| **Action humaine requise ?** | Non. La Release attend que la CI soit verte, puis s'exécute automatiquement. Lancement manuel possible via `workflow_dispatch`. |
 | **Branches différentes par release ?** | Non. Les tags (`v1.0.0`, `v1.1.0`) sont créés sur `main`. Pas de branches dédiées (`release/1.0`, etc.). |
 | **Test release avant stable ?** | Pour une pre-release, on peut ajouter une branche `beta` ou `next` dans `release.config.js` (non configuré par défaut). |
 
@@ -140,7 +145,17 @@ Pour créer la première release (v1.0.0) :
 
 ---
 
-## 6. Références
+## 6. Dépannage
+
+| Problème | Cause | Solution |
+|----------|-------|----------|
+| **Docker Image ne se lance pas** | Le workflow ne se déclenche que sur push de tag `v*`. Si semantic-release ne crée pas de release (pas de `feat`/`fix`), aucun tag. | S'assurer que les commits sur `main` incluent au moins un `feat` ou `fix`. Les merge commits ne comptent pas. |
+| **Release ne s'exécute pas** | Release attend que la CI soit verte. | Corriger les échecs de la CI. |
+| **Pas de release malgré des feat** | semantic-release analyse depuis le dernier tag. | Vérifier l'onglet Releases sur GitHub. |
+
+---
+
+## 7. Références
 
 - [semantic-release](https://github.com/semantic-release/semantic-release)
 - [Conventional Commits](https://www.conventionalcommits.org/)

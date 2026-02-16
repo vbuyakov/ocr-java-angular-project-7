@@ -30,6 +30,12 @@ run_angular_tests() {
   npm ci
   echo "[run-tests] Running Angular tests..."
   npm test
+  EXIT=$?
+  if [ -d "${PROJECT_ROOT}/front/coverage" ]; then
+    mkdir -p "${RESULTS_DIR}"
+    cp -R "${PROJECT_ROOT}/front/coverage/." "${RESULTS_DIR}/" 2>/dev/null || true
+  fi
+  return $EXIT
 }
 
 run_spring_boot_tests() {

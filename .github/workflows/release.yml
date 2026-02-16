@@ -1,20 +1,25 @@
 name: Release
 
+# Run after CI succeeds on main (Release depends on tests passing)
 on:
-  push:
-    branches: ['main']
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
           fetch-depth: 0
 
       - name: Set up Node.js

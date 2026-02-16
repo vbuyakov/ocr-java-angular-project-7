@@ -1,9 +1,14 @@
 name: Docker Image CI
 
-# Only on release (tag v*) to save Actions minutes. No build on push/PR.
+# workflow_run: Release creates tags via GITHUB_TOKEN, which does NOT trigger other
+# workflows. So we run after Release succeeds instead of relying on tag push.
 on:
+  workflow_run:
+    workflows: ['Release']
+    types: [completed]
+    branches: [main]
   push:
-    tags: ['v*']
+    tags: ['v*']  # manual tag push still triggers
   workflow_dispatch:
 
 env:
@@ -14,11 +19,14 @@ jobs:
   publish:
     name: Build and publish to GHCR
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
