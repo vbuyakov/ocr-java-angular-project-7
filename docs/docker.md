@@ -107,8 +107,9 @@ docker compose up -d
 **En production** (images pré-construites depuis GHCR) :
 
 ```bash
-# Connexion au registre (une fois, avec un PAT ayant read:packages)
-docker login ghcr.io -u vbuyakov
+# Connexion au registre (une fois)
+# Token : GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), scope read:packages
+echo YOUR_TOKEN | docker login ghcr.io -u vbuyakov --password-stdin
 
 # Démarrer app (et optionnellement ELK) via le script
 ./misc/cicd/prod-up.sh             # App + ELK

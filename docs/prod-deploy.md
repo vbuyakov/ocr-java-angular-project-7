@@ -23,7 +23,7 @@ Chaque projet doit avoir son propre `ELK_PROJECT` et `KIBANA_PORT`. Dans Nginx, 
 ## Prérequis
 
 - Docker et Docker Compose installés
-- Accès au registre GHCR (`docker login ghcr.io`)
+- Accès au registre GHCR (token GitHub avec `read:packages`)
 - Nginx installé sur l’hôte pour SSL et routage des domaines
 - ~4 Go RAM disponibles pour ELK
 
@@ -42,7 +42,9 @@ Chaque projet doit avoir son propre `ELK_PROJECT` et `KIBANA_PORT`. Dans Nginx, 
 
 ```bash
 # Connexion GHCR (une fois)
-docker login ghcr.io -u vbuyakov
+# Token : GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+# Scope requis : read:packages
+echo YOUR_TOKEN | docker login ghcr.io -u vbuyakov --password-stdin
 
 # Démarrer app + ELK
 ./misc/cicd/prod-up.sh
@@ -63,7 +65,7 @@ Options du script :
 ### 1. Préparation des images
 
 ```bash
-docker login ghcr.io -u vbuyakov
+echo YOUR_TOKEN | docker login ghcr.io -u vbuyakov --password-stdin
 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 ```
 
@@ -159,13 +161,26 @@ sudo certbot renew --dry-run
 
 ## Configuration Nginx (hôte)
 
-L’hôte doit exposer :
-- **ocr-ja7.buyakov.com** → proxy vers l’app (ex. localhost:80)
-- **ocr-ja7-elk.buyakov.com** → proxy vers Kibana (localhost:5601)
+L’hôte Nginx termine le SSL et achemine vers :
+- **ocr-ja7.buyakov.com** → app (127.0.0.1:8080)
+- **ocr-ja7-elk.buyakov.com** → Kibana (127.0.0.1:5601)
 
-Voir :
-- `misc/elk/nginx-ocr-ja7-elk.conf` pour Kibana
-- Configuration existante pour l’app sur port 80
+### Fichiers et installation
+
+| Fichier | Domaine | Backend |
+|---------|---------|---------|
+| `misc/docker/nginx-ocr-ja7.conf` | ocr-ja7.buyakov.com | 127.0.0.1:8080 |
+| `misc/elk/nginx-ocr-ja7-elk.conf` | ocr-ja7-elk.buyakov.com | 127.0.0.1:5601 |
+
+**Étapes :**
+
+1. `sudo apt install nginx`
+2. `sudo mkdir -p /var/www/certbot`
+3. Copier : `sudo cp misc/docker/nginx-ocr-ja7.conf /etc/nginx/sites-available/ocr-ja7` puis idem pour `misc/elk/nginx-ocr-ja7-elk.conf` → `ocr-ja7-elk`
+4. Activer : `sudo ln -sf /etc/nginx/sites-available/ocr-ja7 /etc/nginx/sites-enabled/` (idem ocr-ja7-elk)
+5. Certificats SSL (section ci-dessus)
+6. `APP_PORT=8080` dans `.env` pour éviter conflit avec Nginx
+7. `sudo nginx -t && sudo systemctl reload nginx`
 
 ---
 
