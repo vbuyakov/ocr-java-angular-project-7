@@ -1,0 +1,8 @@
+# Minimal override: suppress APM plugin migration errors (no_shard_available when Fleet absent)
+# Elasticsearch/server settings come from docker-compose env vars (ELASTICSEARCH_HOSTS, etc.)
+logging:
+  root:
+    level: info
+  loggers:
+    - name: plugins.apm
+      level: fatal

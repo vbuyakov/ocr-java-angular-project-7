@@ -1,35 +1,36 @@
-# Filebeat - collect Docker container logs (Caddy, Spring Boot)
-# Sends to Logstash for processing and indexing in Elasticsearch
+# Filebeat - collect logs ONLY from orion-microcrm project containers
+# Uses autodiscover to scope to one Docker Compose project, not the whole server
+#
+# BEAT_COMPOSE_PROJECT: env var for project name (default orion-microcrm)
 
-filebeat.inputs:
-  - type: container
-    paths:
-      - /var/lib/docker/containers/*/*.log
-    stream: all
-    format: docker
-    processors:
-      - add_docker_metadata:
-          host: "unix:///var/run/docker.sock"
-      - drop_event:
-          when:
-            not:
-              or:
-                - contains:
-                    docker.container.name: "back"
-                - contains:
-                    docker.container.name: "front"
+filebeat.inputs: []
 
 filebeat.autodiscover:
-  enabled: false
+  enabled: true
+  providers:
+    - type: docker
+      hints.enabled: false
+      templates:
+        - condition:
+            contains:
+              docker.container.name: "orion-microcrm"
+          config:
+            - type: filestream
+              id: container-${data.docker.container.id}
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              parsers:
+                - container: ~
+              processors:
+                - add_docker_metadata:
+                    host: "unix:///var/run/docker.sock"
 
 # Output to Logstash
 output.logstash:
   hosts: ["logstash:5044"]
 
-# Disable ES output (Logstash handles indexing)
 output.elasticsearch:
   enabled: false
 
-# Logging
 logging.level: info
 logging.to_files: false
