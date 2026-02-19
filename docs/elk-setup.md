@@ -17,14 +17,13 @@ Host Nginx (SSL) → ocr-ja7-elk.buyakov.com
    Réseau Docker elk
        │
    ├── Elasticsearch (interne)
-   ├── Logstash (interne)
-   └── Filebeat ← /var/lib/docker/containers (back, front)
+   ├── Logstash (optionnel, inutilisé)
+   └── Filebeat → Elasticsearch (direct, index ocr-ja7-logs-*)
 ```
 
 - **Kibana** : seul service exposé (localhost:5601), accès via Nginx
 - **Elasticsearch** : interne, non exposé
-- **Logstash** : interne, reçoit Filebeat sur 5044
-- **Filebeat** : collecte uniquement les logs du projet orion-microcrm (autodiscover, pas tout le serveur)
+- **Filebeat** : collecte les logs orion-microcrm, envoie directement vers ES
 
 ---
 
@@ -71,13 +70,15 @@ Adapter dans Nginx : `proxy_pass http://127.0.0.1:5602`.
 |---------|------|
 | `docker-compose-elk.yml` | Compose ELK standalone |
 | `misc/cicd/prod-up.sh` | Script de démarrage app + ELK en prod |
-| `misc/elk/filebeat.yml` | Autodiscover : collecte uniquement les conteneurs orion-microcrm |
+| `misc/elk/filebeat.yml` | Collecte des logs nginx (orion-microcrm) via volume partagé |
 | `misc/elk/logstash.conf` | Pipeline Filebeat → ES |
 | `misc/elk/nginx-ocr-ja7-elk.conf` | Snippet Nginx (hôte) pour Kibana |
 
 ---
 
 ## Démarrage
+
+**Ordre de démarrage** : lancer l’app avant l’ELK pour créer le volume `nginx-logs`.
 
 **Option 1 – Script tout-en-un (app + ELK)** :
 
@@ -89,6 +90,10 @@ Adapter dans Nginx : `proxy_pass http://127.0.0.1:5602`.
 **Option 2 – Compose manuel** :
 
 ```bash
+# 1. Démarrer l'app (crée le volume nginx-logs)
+docker compose up -d
+
+# 2. Démarrer l'ELK
 docker compose -f docker-compose-elk.yml up -d
 ```
 
@@ -110,13 +115,38 @@ sudo cp misc/elk/nginx-ocr-ja7-elk.conf /etc/nginx/sites-available/ocr-ja7-elk
 sudo ln -s /etc/nginx/sites-available/ocr-ja7-elk /etc/nginx/sites-enabled/
 ```
 
-2. Adapter les chemins des certificats SSL (Let's Encrypt ou existants).
+2. **Adapter `proxy_pass` au bon port** : le port doit correspondre à `KIBANA_PORT` utilisé par le compose (ex. 8001 ou 5601). Éditer `/etc/nginx/sites-available/ocr-ja7-elk` et modifier la ligne `proxy_pass http://127.0.0.1:XXXX;`.
 
-3. Tester et recharger :
+3. Adapter les chemins des certificats SSL (Let's Encrypt ou existants).
+
+4. Tester et recharger :
 
 ```bash
 sudo nginx -t && sudo nginx -s reload
 ```
+
+### 502 Bad Gateway – diagnostic
+
+Sur le serveur, exécuter :
+
+```bash
+# 1. Vérifier sur quel port Kibana écoute
+docker compose -f docker-compose-elk.yml ps
+# Exemple : 127.0.0.1:8001->5601/tcp → Kibana sur 8001
+
+# 2. Tester Kibana directement (sur le serveur)
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001
+# 200 = OK. Si "Connection refused", Kibana n'écoute pas ou mauvais port.
+
+# 3. Vérifier le port dans la config Nginx
+grep proxy_pass /etc/nginx/sites-available/ocr-ja7-elk
+# Doit afficher le même port (8001 ou 5601)
+
+# 4. Logs Nginx (erreur connexion upstream)
+sudo tail -20 /var/log/nginx/error.log
+```
+
+Si `curl http://127.0.0.1:8001` renvoie 200 mais le site en HTTPS donne 502, le port dans `proxy_pass` est probablement incorrect.
 
 ---
 
@@ -140,7 +170,7 @@ sudo nginx -t && sudo nginx -s reload
    - Ajuster l’intervalle (ex. « Last 15 minutes ») et cliquer sur **Refresh**  
    - Filtrer par `docker.container.name` (back, front) ou `message`, etc.
 
-**Note :** Filebeat ne récupère que les logs des conteneurs dont le nom contient `back` ou `front`. Les premiers logs peuvent prendre 1–2 minutes à apparaître.
+**Note :** Filebeat lit les logs nginx depuis un volume partagé (`nginx-logs`). Les premiers logs peuvent prendre 1–2 minutes à apparaître. Filtrer par `container: orion-microcrm-nginx` dans Kibana.
 
 ---
 
@@ -170,6 +200,77 @@ docker exec ocr-ja7-elasticsearch curl -X DELETE \
   -u "elastic:$ELASTIC_PASSWORD" \
   "http://localhost:9200/ocr-ja7-logs-2022.10.*,ocr-ja7-logs-2022.11.*"
 ```
+
+---
+
+## Dépannage : pas de logs dans Kibana
+
+### 1. Vérifier que l’ELK tourne sur le même hôte que l’app
+
+Filebeat lit les logs dans `/var/lib/docker/containers/` sur l’hôte. L’ELK et l’app doivent tourner sur la même machine.
+
+```bash
+# ELK tourne ?
+docker compose -f docker-compose-elk.yml ps
+
+# Si absent : démarrer ELK
+./misc/cicd/prod-up.sh --elk-only
+# ou
+docker compose -f docker-compose-elk.yml up -d
+```
+
+### 2. Vérifier qu’Elasticsearch indexe bien les logs
+
+```bash
+# Lister les index ocr-ja7-logs-*
+docker exec ocr-ja7-elasticsearch curl -s -u "elastic:$ELASTIC_PASSWORD" \
+  "http://localhost:9200/_cat/indices/ocr-ja7-logs-*?v"
+
+# Compter les documents dans l’index du jour
+docker exec ocr-ja7-elasticsearch curl -s -u "elastic:$ELASTIC_PASSWORD" \
+  "http://localhost:9200/ocr-ja7-logs-$(date +%Y.%m.%d)/_count"
+```
+
+### 3. Vérifier Filebeat (logs nginx)
+
+Filebeat lit les logs nginx depuis le volume partagé.
+
+```bash
+# Logs Filebeat
+docker logs ocr-ja7-filebeat --tail 100
+
+# Vérifier que le volume nginx-logs existe
+docker volume ls | grep nginx-logs
+```
+
+### 4. Vérifier les logs bruts des conteneurs app
+
+```bash
+# Back (Spring Boot) – logs sur stdout
+docker logs orion-microcrm-back-1 --tail 20
+
+# Front (Caddy)
+docker logs orion-microcrm-front-1 --tail 20
+
+# Nginx
+docker logs orion-microcrm-nginx-1 --tail 20
+```
+
+### 5. Vérifier Logstash
+
+```bash
+docker logs ocr-ja7-logstash --tail 50
+```
+
+### 6. Kibana : index pattern et plage horaire
+
+1. **Créer la data view** : Stack Management → Data Views → Create → Index pattern : `ocr-ja7-logs-*` → Time field : `@timestamp` → Save.
+2. **Plage horaire** : Discover → Last 15 minutes (ou Last 24 hours) → Refresh.
+3. **Filtres** : `container: orion-microcrm-nginx` pour les logs nginx.
+
+### 7. Volume nginx-logs
+
+Filebeat lit les logs depuis le volume partagé `ocr-ja7-nginx-logs`, pas depuis `/var/lib/docker/containers`. L'app doit être démarrée en premier pour créer ce volume.
 
 ---
 

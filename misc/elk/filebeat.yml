@@ -1,35 +1,40 @@
-# Filebeat - collect logs ONLY from orion-microcrm project containers
-# Uses autodiscover to scope to one Docker Compose project, not the whole server
+# Filebeat - collect logs from orion-microcrm-nginx
+# Reads from shared volume nginx-logs (no /var/lib/docker/containers needed)
 #
-# BEAT_COMPOSE_PROJECT: env var for project name (default orion-microcrm)
+# Prerequisite: start orion-microcrm app first so the nginx-logs volume exists:
+#   docker compose up -d
+# Then start ELK:
+#   docker compose -f docker-compose-elk.yml up -d
 
-filebeat.inputs: []
+filebeat.inputs:
+  - type: filestream
+    id: orion-microcrm-nginx
+    enabled: true
+    paths:
+      - /var/log/nginx/access_http.log
+      - /var/log/nginx/error_http.log
+    fields:
+      log_source: nginx
+      log_container: orion-microcrm-nginx
+    fields_under_root: true
 
-filebeat.autodiscover:
-  enabled: true
-  providers:
-    - type: docker
-      hints.enabled: false
-      templates:
-        - condition:
-            contains:
-              docker.container.name: "orion-microcrm"
-          config:
-            - type: filestream
-              id: container-${data.docker.container.id}
-              paths:
-                - /var/lib/docker/containers/${data.docker.container.id}/*.log
-              parsers:
-                - container: ~
-              processors:
-                - add_docker_metadata:
-                    host: "unix:///var/run/docker.sock"
+# Required when using custom index name
+setup.template.name: "ocr-ja7-logs"
+setup.template.pattern: "ocr-ja7-logs-*"
+setup.template.settings:
+  index.number_of_replicas: 0
+# Disable ILM (logstash_writer lacks cluster:admin/ilm/*)
+setup.ilm.enabled: false
 
-# Output to Logstash
-output.logstash:
-  hosts: ["logstash:5044"]
-
+# Output: Elasticsearch directly
+# Using elastic user: logstash_writer role keeps failing (403/drops). TODO: fix role
 output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOSTS:elasticsearch:9200}"]
+  username: "elastic"
+  password: "${ELASTIC_PASSWORD}"
+  index: "ocr-ja7-logs-%{+YYYY.MM.dd}"
+
+output.logstash:
   enabled: false
 
 logging.level: info

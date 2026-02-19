@@ -75,26 +75,27 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.17.0
     container_name: ${ELK_PROJECT:-ocr-ja7}-filebeat
-    user: root
     volumes:
       - ./misc/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx-logs:/var/log/nginx:ro
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
-      - LOGSTASH_HOSTS=logstash:5044
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - NODE_NAME=filebeat
     command: filebeat -e --strict.perms=false
     networks:
       - elk
     depends_on:
-      logstash:
+      kibana:
         condition: service_started
     restart: on-failure
 
 volumes:
   elasticsearch-data:
     name: ${ELK_PROJECT:-ocr-ja7}-elasticsearch-data
+  nginx-logs:
+    external: true
+    name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
 
 networks:
   elk:
