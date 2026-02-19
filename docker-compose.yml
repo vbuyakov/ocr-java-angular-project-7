@@ -5,8 +5,12 @@ services:
     build:
       context: .
       dockerfile: back/Dockerfile
+    user: root
     environment:
       SPRING_APPLICATION_NAME: ${SPRING_APP_NAME:-microcrm}
+      LOGGING_FILE_PATH: /var/log/app
+    volumes:
+      - back-logs:/var/log/app
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/profile"]
       interval: 10s
@@ -42,6 +46,8 @@ services:
 volumes:
   nginx-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
+  back-logs:
+    name: ${ELK_PROJECT:-ocr-ja7}-back-logs
 
 networks:
   orioncrm:
