@@ -10,6 +10,12 @@ on:
   push:
     tags: ['v*']  # manual tag push still triggers
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to production after build'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -61,3 +67,21 @@ jobs:
             ${{ env.IMAGE_PREFIX }}-front:latest
           cache-from: type=gha
           cache-to: type=gha
+
+  deploy:
+    name: Deploy app to production
+    runs-on: ubuntu-latest
+    # needs: publish  # skipped for testing - deploy can run standalone on any branch
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    steps:
+      - name: Deploy app on server (pull, restart app only, no ELK)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd ${{ vars.PROD_APP_PATH }}
+            git pull
+            chmod +x misc/cicd/prod-up.sh
+            ./misc/cicd/prod-up.sh --app-only

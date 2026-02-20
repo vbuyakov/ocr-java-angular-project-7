@@ -47,9 +47,9 @@ Le pipeline CD est **séparé** du pipeline CI (`ci.yml`). La CI exécute les te
 
 ---
 
-## 3. Authentification (aucun secret à configurer)
+## 3. Authentification GHCR (aucun secret à configurer)
 
-Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Actions. Aucun secret supplémentaire n'est requis pour publier vers GHCR.
+Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Actions. Aucun secret supplémentaire n'est requis pour publier vers GHCR. Pour le deploy (voir section 5), les secrets `PROD_HOST`, `PROD_SSH_USER` et `PROD_SSH_KEY` sont nécessaires.
 
 | Élément | Valeur |
 |---------|--------|
@@ -77,23 +77,53 @@ Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Acti
 ## 5. Ordre d’exécution
 
 ```
-Push/PR sur main
+Release success / tag v* / workflow_dispatch
        │
-       ▼
-┌──────────────┐
-│ Job: build   │  ← Construit back, front (sans push)
-└──────────────┘
-       │
-       │ (uniquement si push sur main)
        ▼
 ┌──────────────┐
 │ Job: publish │  ← Login GHCR, build + push des 2 images
+└──────────────┘
+       │
+       │ (uniquement si workflow_dispatch + case « Deploy » cochée)
+       ▼
+┌──────────────┐
+│ Job: deploy  │  ← SSH → git pull → prod-up.sh --app-only (app uniquement, pas ELK)
 └──────────────┘
 ```
 
 Le pipeline CD est **indépendant** du pipeline CI. Les deux s’exécutent en parallèle lors d’un push sur `main`. Pour garantir que seuls des builds testés sont publiés, il est recommandé de :
 - Protéger la branche `main` avec des status checks obligatoires (tests CI),
 - Ne merger que des PR dont la CI est verte.
+
+---
+
+## 5. Deploy (app only, sans ELK) – optionnel, manuel uniquement
+
+Le job `deploy` ne s'exécute **jamais** automatiquement. Il ne se lance que lorsque vous exécutez le workflow manuellement (Actions → Docker Image CI → Run workflow) et que vous cochez **Deploy to production after build**.
+
+Après publication des images, le job `deploy` se connecte en SSH au serveur et :
+1. fait un `git pull` dans le répertoire de l'app
+2. exécute `./misc/cicd/prod-up.sh --app-only` (pull images, redémarrage de l'app uniquement)
+
+### Paramètres à ajouter dans GitHub
+
+Aller dans le dépôt → **Settings** → **Secrets and variables** → **Actions**.
+
+#### Variables (onglet « Variables »)
+
+| Nom | Valeur | Requis |
+|-----|--------|--------|
+| `PROD_APP_PATH` | `/srv/www/ocr-education/ocr-java-angular-project-7` | Oui |
+
+#### Secrets (onglet « Secrets »)
+
+| Nom | Valeur | Requis |
+|-----|--------|--------|
+| `PROD_HOST` | Hostname ou IP du serveur (ex. `ocr-ja7.buyakov.com` ou `192.168.1.10`) | Oui |
+| `PROD_SSH_USER` | Utilisateur SSH (ex. `deploy`, `ubuntu`, `root`) | Oui |
+| `PROD_SSH_KEY` | Contenu complet de la clé privée (ex. `cat ~/.ssh/id_rsa` — tout le bloc incluant `-----BEGIN...` et `-----END...`) | Oui |
+
+Sans ces trois secrets, le job `deploy` échouera. Pour désactiver le déploiement, ne pas configurer ces secrets ou décocher « Deploy » lors du run manuel.
 
 ---
 
