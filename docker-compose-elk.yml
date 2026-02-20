@@ -79,6 +79,7 @@ services:
       - ./misc/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - nginx-logs:/var/log/nginx:ro
       - back-logs:/var/log/app:ro
+      - front-logs:/var/log/caddy:ro
     environment:
       - ELASTICSEARCH_HOSTS=elasticsearch:9200
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
@@ -100,6 +101,9 @@ volumes:
   back-logs:
     external: true
     name: ${ELK_PROJECT:-ocr-ja7}-back-logs
+  front-logs:
+    external: true
+    name: ${ELK_PROJECT:-ocr-ja7}-front-logs
 
 networks:
   elk:

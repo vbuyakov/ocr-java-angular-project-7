@@ -24,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: front/Dockerfile
+    volumes:
+      - front-logs:/var/log/caddy
     depends_on:
       back:
         condition: service_healthy
@@ -48,6 +50,8 @@ volumes:
     name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
   back-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-back-logs
+  front-logs:
+    name: ${ELK_PROJECT:-ocr-ja7}-front-logs
 
 networks:
   orioncrm:

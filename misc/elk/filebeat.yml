@@ -28,6 +28,16 @@ filebeat.inputs:
       log_container: orion-microcrm-back
     fields_under_root: true
 
+  - type: filestream
+    id: orion-microcrm-front
+    enabled: true
+    paths:
+      - /var/log/caddy/access.log
+    fields:
+      log_source: front
+      log_container: orion-microcrm-front
+    fields_under_root: true
+
 # Required when using custom index name
 setup.template.name: "ocr-ja7-logs"
 setup.template.pattern: "ocr-ja7-logs-*"
