@@ -6,7 +6,7 @@ on:
   workflow_run:
     workflows: ['Release']
     types: [completed]
-    branches: [main]
+    branches: [main, feat-prod-installation]
   push:
     tags: ['v*']  # manual tag push still triggers
   workflow_dispatch:
@@ -25,7 +25,10 @@ jobs:
   publish:
     name: Build and publish to GHCR
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    if: >
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     permissions:
       contents: read
       packages: write
