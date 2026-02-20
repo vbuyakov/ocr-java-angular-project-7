@@ -2,6 +2,25 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+# [1.1.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.0.1...v1.1.0) (2026-02-20)
+
+
+### Bug Fixes
+
+* back logs to elk ([faf00d1](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/faf00d154b13bcdf24623f9b501cbd8def288d2c))
+* elk security ([bfb948b](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/bfb948b39f894497891e25ea25f6cbc4aef5b54c))
+* logstash, elastic security ([dba3d5f](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/dba3d5f03104755a90bc5d0bc16ad0c091482b78))
+* run nginx logs with filebeat ([9266402](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/9266402d2a52a41846a819d739fea6885900e5f9))
+* setup logs ([1ce6663](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/1ce66636e8d28c00fe960993a036a1b64c0b7ccc))
+
+
+### Features
+
+* collect logs for front container ([1039f2d](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/1039f2d8583602c6253b7dc5f0cc75402a82314d))
+* ELK; prod setup ([42f0315](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/42f03153753615ab2c963bdb08ab416fd5d37555))
+* nginx config and docs for prod installation ([2fac796](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/2fac79646ead93b11f82a36f8517d97de0c34b14))
+* Setup ELK stack to analyse project ([f9c4e06](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/f9c4e06be648556d83f30d56e7b1bd877bec9d58))
+
 ## [1.0.1](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.0.0...v1.0.1) (2026-02-16)
 
 
