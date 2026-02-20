@@ -1,0 +1,2 @@
+# Disable monitoring (license checker would otherwise hit ES without credentials)
+xpack.monitoring.enabled: false

@@ -1,0 +1,111 @@
+# ELK Stack for production - logs from app containers (Caddy, Spring Boot)
+# Usage: docker compose -f docker-compose-elk.yml up -d
+#
+# Multi-project: set ELK_PROJECT and KIBANA_PORT to avoid conflicts:
+#   ELK_PROJECT=ocr-ja7 KIBANA_PORT=5601 ...  (project A)
+#   ELK_PROJECT=other   KIBANA_PORT=5602 ...  (project B)
+#
+# Kibana exposed on 127.0.0.1:${KIBANA_PORT}. Elasticsearch/Logstash internal.
+# KIBANA_PUBLIC_URL: public URL for Kibana (links, exports) - default ocr-ja7-elk
+# ELASTIC_PASSWORD: set in .env. kibana-entrypoint.sh sets kibana_system + logstash_writer. Log in with elastic
+
+name: ${ELK_PROJECT:-ocr-ja7}-elk
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: ${ELK_PROJECT:-ocr-ja7}-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - cluster.max_shards_per_node=2000
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.17.0
+    container_name: ${ELK_PROJECT:-ocr-ja7}-logstash
+    volumes:
+      - ./misc/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./misc/elk/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+      - ELASTICSEARCH_USER=logstash_writer
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    networks:
+      - elk
+    depends_on:
+      kibana:
+        condition: service_started
+    # No ports exposed - Filebeat connects internally
+    restart: on-failure
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: ${ELK_PROJECT:-ocr-ja7}-kibana
+    entrypoint: ["/bin/sh", "/usr/share/kibana/kibana-entrypoint.sh"]
+    volumes:
+      - ./misc/elk/kibana-entrypoint.sh:/usr/share/kibana/kibana-entrypoint.sh:ro
+      - ./misc/elk/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - SERVER_PUBLICBASEURL=${KIBANA_PUBLIC_URL:-https://ocr-ja7-elk.buyakov.com}
+    ports:
+      - "127.0.0.1:${KIBANA_PORT:-5601}:5601"
+    networks:
+      - elk
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.17.0
+    container_name: ${ELK_PROJECT:-ocr-ja7}-filebeat
+    volumes:
+      - ./misc/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - nginx-logs:/var/log/nginx:ro
+      - back-logs:/var/log/app:ro
+      - front-logs:/var/log/caddy:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - NODE_NAME=filebeat
+    command: filebeat -e --strict.perms=false
+    networks:
+      - elk
+    depends_on:
+      kibana:
+        condition: service_started
+    restart: on-failure
+
+volumes:
+  elasticsearch-data:
+    name: ${ELK_PROJECT:-ocr-ja7}-elasticsearch-data
+  nginx-logs:
+    external: true
+    name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
+  back-logs:
+    external: true
+    name: ${ELK_PROJECT:-ocr-ja7}-back-logs
+  front-logs:
+    external: true
+    name: ${ELK_PROJECT:-ocr-ja7}-front-logs
+
+networks:
+  elk:
+    driver: bridge
+    name: ${ELK_PROJECT:-ocr-ja7}-elk-network

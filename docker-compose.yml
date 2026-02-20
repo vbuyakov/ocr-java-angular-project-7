@@ -5,8 +5,12 @@ services:
     build:
       context: .
       dockerfile: back/Dockerfile
+    user: root
     environment:
       SPRING_APPLICATION_NAME: ${SPRING_APP_NAME:-microcrm}
+      LOGGING_FILE_PATH: /var/log/app
+    volumes:
+      - back-logs:/var/log/app
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/profile"]
       interval: 10s
@@ -20,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: front/Dockerfile
+    volumes:
+      - front-logs:/var/log/caddy
     depends_on:
       back:
         condition: service_healthy
@@ -30,6 +36,7 @@ services:
     image: nginx:alpine
     volumes:
       - ./misc/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-logs:/var/log/nginx
     ports:
       - "${APP_PORT:-80}:80"
     depends_on:
@@ -37,6 +44,14 @@ services:
       - front
     networks:
       - orioncrm
+
+volumes:
+  nginx-logs:
+    name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
+  back-logs:
+    name: ${ELK_PROJECT:-ocr-ja7}-back-logs
+  front-logs:
+    name: ${ELK_PROJECT:-ocr-ja7}-front-logs
 
 networks:
   orioncrm:

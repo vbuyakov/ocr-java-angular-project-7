@@ -31,3 +31,6 @@ test-results/
 
 # SSL certificates (dev self-signed, prod paths)
 misc/certs/
+
+
+ui-test

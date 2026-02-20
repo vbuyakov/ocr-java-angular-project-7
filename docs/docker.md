@@ -107,13 +107,20 @@ docker compose up -d
 **En production** (images pré-construites depuis GHCR) :
 
 ```bash
-# Connexion au registre (une fois, avec un PAT ayant read:packages)
-docker login ghcr.io -u vbuyakov
+# Connexion au registre (une fois)
+# Token : GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), scope read:packages
+echo YOUR_TOKEN | docker login ghcr.io -u vbuyakov --password-stdin
 
-# Récupération des images puis démarrage
+# Démarrer app (et optionnellement ELK) via le script
+./misc/cicd/prod-up.sh             # App + ELK
+./misc/cicd/prod-up.sh --app-only  # App seul
+
+# Ou manuellement
 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 ```
+
+Voir [prod-deploy.md](prod-deploy.md) pour le déploiement complet.
 
 Pour figer une version en production (ex. `v1.0.1`) :
 
