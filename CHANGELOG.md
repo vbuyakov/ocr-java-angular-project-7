@@ -2,6 +2,15 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+# [1.2.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.1.0...v1.2.0) (2026-02-23)
+
+
+### Features
+
+* deploy on server ([0c063cb](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/0c063cb85a64ad016c082e22dd5e8892ec18cdd6))
+* deploy on server on test branch ([363c1b0](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/363c1b062cdb8da4149c15e00d3a7851d5f399e2))
+* install changes on a production server ([dc75203](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/dc75203487df2e9cbae7c4c5e4a0167a81705fc4))
+
 # [1.1.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.0.1...v1.1.0) (2026-02-20)
 
 
