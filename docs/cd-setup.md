@@ -84,7 +84,6 @@ Release success / tag v* / workflow_dispatch
 │ Job: publish │  ← Login GHCR, build + push des 2 images
 └──────────────┘
        │
-       │ (uniquement si workflow_dispatch + case « Deploy » cochée)
        ▼
 ┌──────────────┐
 │ Job: deploy  │  ← SSH → git pull → prod-up.sh --app-only (app uniquement, pas ELK)
@@ -97,9 +96,15 @@ Le pipeline CD est **indépendant** du pipeline CI. Les deux s’exécutent en p
 
 ---
 
-## 5. Deploy (app only, sans ELK) – optionnel, manuel uniquement
+## 5. Deploy (app only, sans ELK) – automatique
 
-Le job `deploy` ne s'exécute **jamais** automatiquement. Il ne se lance que lorsque vous exécutez le workflow manuellement (Actions → Docker Image CI → Run workflow) et que vous cochez **Deploy to production after build**.
+Le job `deploy` s'exécute **automatiquement** après le job `publish` (build et push des images). Il ne s'exécute que lorsque `publish` a réussi, c'est-à-dire :
+
+- après succès de **Release** sur `main`
+- après push d'un tag `v*`
+- après exécution manuelle du workflow (**Actions** → **Docker Image CI** → **Run workflow**)
+
+---
 
 Après publication des images, le job `deploy` se connecte en SSH au serveur et :
 1. fait un `git pull` dans le répertoire de l'app
@@ -121,9 +126,24 @@ Aller dans le dépôt → **Settings** → **Secrets and variables** → **Actio
 |-----|--------|--------|
 | `PROD_HOST` | Hostname ou IP du serveur (ex. `ocr-ja7.buyakov.com` ou `192.168.1.10`) | Oui |
 | `PROD_SSH_USER` | Utilisateur SSH (ex. `deploy`, `ubuntu`, `root`) | Oui |
-| `PROD_SSH_KEY` | Contenu complet de la clé privée (ex. `cat ~/.ssh/id_rsa` — tout le bloc incluant `-----BEGIN...` et `-----END...`) | Oui |
+| `PROD_SSH_KEY` | **Clé privée** (pas le fichier `.pub`). Voir ci-dessous. | Oui |
 
-Sans ces trois secrets, le job `deploy` échouera. Pour désactiver le déploiement, ne pas configurer ces secrets ou décocher « Deploy » lors du run manuel.
+**Format de `PROD_SSH_KEY`** — doit être la clé **privée** au format PEM :
+
+- Fichier à copier : `~/.ssh/id_rsa` (ou `id_ed25519`), **pas** `id_rsa.pub`
+- Contenu attendu : tout le bloc, de `-----BEGIN ... PRIVATE KEY-----` jusqu'à `-----END ... PRIVATE KEY-----`
+- Sans mot de passe (passphrase) — sinon l'authentification échouera
+- Pas d'espaces ou de lignes en trop au début ou à la fin
+
+Pour générer une clé dédiée sans passphrase :
+
+```bash
+ssh-keygen -t ed25519 -C "deploy" -f ~/.ssh/deploy_key -N ""
+# Ajouter ~/.ssh/deploy_key.pub sur le serveur (authorized_keys)
+# Mettre le contenu de ~/.ssh/deploy_key dans PROD_SSH_KEY
+```
+
+Sans ces trois secrets, le job `deploy` échouera. Pour désactiver le déploiement, retirer ces secrets.
 
 ---
 

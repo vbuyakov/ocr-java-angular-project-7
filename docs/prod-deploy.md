@@ -20,9 +20,9 @@ Chaque projet doit avoir son propre `ELK_PROJECT` et `KIBANA_PORT`. Dans Nginx, 
 
 ---
 
-## Déploiement via CI/CD (optionnel, manuel)
+## Déploiement via CI/CD (automatique)
 
-Le workflow `docker-image.yml` ne déploie jamais automatiquement. Pour déployer, exécuter le workflow manuellement (Actions → Docker Image CI → Run workflow) et cocher **Deploy to production after build**. Le job `deploy` se connecte en SSH, exécute `git pull` puis `./misc/cicd/prod-up.sh --app-only` (app uniquement, sans ELK).
+Le workflow `docker-image.yml` déploie automatiquement après la publication des images. Le job `deploy` se connecte en SSH, exécute `git pull` puis `./misc/cicd/prod-up.sh --app-only` (app uniquement, sans ELK).
 
 **Paramètres à configurer** (Settings → Secrets and variables → Actions) : variables `PROD_APP_PATH`, secrets `PROD_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`. Détails dans [cd-setup.md](cd-setup.md).
 
