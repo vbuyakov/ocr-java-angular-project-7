@@ -47,9 +47,9 @@ Le pipeline CD est **séparé** du pipeline CI (`ci.yml`). La CI exécute les te
 
 ---
 
-## 3. Authentification (aucun secret à configurer)
+## 3. Authentification GHCR (aucun secret à configurer)
 
-Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Actions. Aucun secret supplémentaire n'est requis pour publier vers GHCR.
+Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Actions. Aucun secret supplémentaire n'est requis pour publier vers GHCR. Pour le deploy (voir section 5), les secrets `PROD_HOST`, `PROD_SSH_USER` et `PROD_SSH_KEY` sont nécessaires.
 
 | Élément | Valeur |
 |---------|--------|
@@ -77,23 +77,73 @@ Le pipeline utilise le **`GITHUB_TOKEN`** fourni automatiquement par GitHub Acti
 ## 5. Ordre d’exécution
 
 ```
-Push/PR sur main
+Release success / tag v* / workflow_dispatch
        │
-       ▼
-┌──────────────┐
-│ Job: build   │  ← Construit back, front (sans push)
-└──────────────┘
-       │
-       │ (uniquement si push sur main)
        ▼
 ┌──────────────┐
 │ Job: publish │  ← Login GHCR, build + push des 2 images
+└──────────────┘
+       │
+       ▼
+┌──────────────┐
+│ Job: deploy  │  ← SSH → git pull → prod-up.sh --app-only (app uniquement, pas ELK)
 └──────────────┘
 ```
 
 Le pipeline CD est **indépendant** du pipeline CI. Les deux s’exécutent en parallèle lors d’un push sur `main`. Pour garantir que seuls des builds testés sont publiés, il est recommandé de :
 - Protéger la branche `main` avec des status checks obligatoires (tests CI),
 - Ne merger que des PR dont la CI est verte.
+
+---
+
+## 5. Deploy (app only, sans ELK) – automatique
+
+Le job `deploy` s'exécute **automatiquement** après le job `publish` (build et push des images). Il ne s'exécute que lorsque `publish` a réussi, c'est-à-dire :
+
+- après succès de **Release** sur `main`
+- après push d'un tag `v*`
+- après exécution manuelle du workflow (**Actions** → **Docker Image CI** → **Run workflow**)
+
+---
+
+Après publication des images, le job `deploy` se connecte en SSH au serveur et :
+1. fait un `git pull` dans le répertoire de l'app
+2. exécute `./misc/cicd/prod-up.sh --app-only` (pull images, redémarrage de l'app uniquement)
+
+### Paramètres à ajouter dans GitHub
+
+Aller dans le dépôt → **Settings** → **Secrets and variables** → **Actions**.
+
+#### Variables (onglet « Variables »)
+
+| Nom | Valeur | Requis |
+|-----|--------|--------|
+| `PROD_APP_PATH` | `/srv/www/ocr-education/ocr-java-angular-project-7` | Oui |
+
+#### Secrets (onglet « Secrets »)
+
+| Nom | Valeur | Requis |
+|-----|--------|--------|
+| `PROD_HOST` | Hostname ou IP du serveur (ex. `ocr-ja7.buyakov.com` ou `192.168.1.10`) | Oui |
+| `PROD_SSH_USER` | Utilisateur SSH (ex. `deploy`, `ubuntu`, `root`) | Oui |
+| `PROD_SSH_KEY` | **Clé privée** (pas le fichier `.pub`). Voir ci-dessous. | Oui |
+
+**Format de `PROD_SSH_KEY`** — doit être la clé **privée** au format PEM :
+
+- Fichier à copier : `~/.ssh/id_rsa` (ou `id_ed25519`), **pas** `id_rsa.pub`
+- Contenu attendu : tout le bloc, de `-----BEGIN ... PRIVATE KEY-----` jusqu'à `-----END ... PRIVATE KEY-----`
+- Sans mot de passe (passphrase) — sinon l'authentification échouera
+- Pas d'espaces ou de lignes en trop au début ou à la fin
+
+Pour générer une clé dédiée sans passphrase :
+
+```bash
+ssh-keygen -t ed25519 -C "deploy" -f ~/.ssh/deploy_key -N ""
+# Ajouter ~/.ssh/deploy_key.pub sur le serveur (authorized_keys)
+# Mettre le contenu de ~/.ssh/deploy_key dans PROD_SSH_KEY
+```
+
+Sans ces trois secrets, le job `deploy` échouera. Pour désactiver le déploiement, retirer ces secrets.
 
 ---
 
