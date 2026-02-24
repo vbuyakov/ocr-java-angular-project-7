@@ -53,6 +53,11 @@ output.elasticsearch:
   username: "elastic"
   password: "${ELASTIC_PASSWORD}"
   index: "ocr-ja7-logs-%{+YYYY.MM.dd}"
+  # Apply nginx ingest pipeline only for nginx inputs (log_source set via fields_under_root)
+  pipelines:
+    - pipeline: "nginx-access-log-parser"
+      when.equals:
+        log_source: "nginx"
 
 output.logstash:
   enabled: false

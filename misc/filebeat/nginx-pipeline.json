@@ -1,0 +1,39 @@
+{
+  "description": "Parse nginx combined access log format for orion-microcrm",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "%{IPORHOST:client_ip} - - \\[%{HTTPDATE:timestamp_nginx}\\] \"%{WORD:http_method} %{URIPATHPARAM:request_uri} HTTP/%{NUMBER:http_version}\" %{NUMBER:http_status:int} %{NUMBER:bytes_sent:int} \"%{DATA:http_referer}\" \"%{DATA:http_user_agent}\""
+        ],
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "date": {
+        "field": "timestamp_nginx",
+        "formats": ["dd/MMM/yyyy:HH:mm:ss Z"],
+        "target_field": "timestamp_nginx",
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "http_status",
+        "type": "integer",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "bytes_sent",
+        "type": "integer",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    }
+  ]
+}
