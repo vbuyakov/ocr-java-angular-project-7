@@ -147,7 +147,7 @@ Cinq KPIs complémentaires aux métriques DORA, adaptés à la taille et aux enj
 
 **Calcul** : `count(status >= 500) / count(all requests) × 100`
 
-**Source ELK** : champ `http.response.status_code` dans les logs Nginx (Filebeat → Elasticsearch, index `ocr-ja7-logs-*`).
+**Source ELK** : champ `http_status` dans les logs Nginx (Filebeat → Elasticsearch, index `ocr-ja7-logs-*`).
 
 **Anomalies détectables** :
 - Pic de 502/504 pendant les redémarrages Docker
@@ -162,7 +162,7 @@ Cinq KPIs complémentaires aux métriques DORA, adaptés à la taille et aux enj
 
 **Objectif** : P95 < 500 ms sur les endpoints CRUD (`/api/organizations`, `/api/persons`).
 
-**Source ELK** : champ `http.response.time` ou `upstream_response_time` dans les logs Nginx / logs Spring Boot (format JSON logback).
+**Source ELK** : champ `request_time` dans les logs Nginx (après mise à jour du log_format) / logs Spring Boot (format JSON logback).
 
 **Analyse actuelle** : Spring Boot avec H2 en mémoire (profil dev par défaut). Les temps de réponse sont naturellement faibles sur une base en mémoire, mais une bascule vers une base persistante (PostgreSQL) en prod modifierait significativement ce KPI.
 
@@ -229,13 +229,16 @@ Cinq KPIs complémentaires aux métriques DORA, adaptés à la taille et aux enj
 
 ```kql
 # Toutes les erreurs 5xx des 24 dernières heures
-http.response.status_code >= 500
+http_status >= 500
 
 # Requêtes lentes (> 1s) sur l'API backend
-upstream_response_time > 1 AND url.path : "/api/*"
+request_time > 1 AND request_uri : "/api/*"
 
-# Logs Spring Boot uniquement
-container.name : "orion-microcrm-back-1"
+# Logs Nginx uniquement
+log_container : "orion-microcrm-nginx"
+
+# Logs Spring Boot (backend) uniquement
+log_container : "orion-microcrm-back"
 
 # Événements lors d'un déploiement (recherche manuelle)
 @timestamp >= "2026-02-23T10:00:00" AND @timestamp <= "2026-02-23T10:30:00"
@@ -254,8 +257,8 @@ container.name : "orion-microcrm-back-1"
 | Uptime (%) | Gauge | `(1 - count(502,503)/count(*)) × 100` sur 30 jours |
 | Taux d'erreurs HTTP | Pie chart | Répartition 2xx / 3xx / 4xx / 5xx |
 | Volume de requêtes | Bar chart (time) | Requêtes/minute sur 24h |
-| Latence P50/P95 | Line chart | `upstream_response_time` percentiles |
-| Top 10 URLs par erreurs | Data table | `url.path` filtré sur 4xx/5xx |
+| Latence P50/P95 | Line chart | `request_time` percentiles |
+| Top 10 URLs par erreurs | Data table | `request_uri` filtré sur 4xx/5xx |
 
 **Index** : `ocr-ja7-logs-*` / **Refresh** : 1 minute
 

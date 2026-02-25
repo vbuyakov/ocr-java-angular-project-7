@@ -1,11 +1,12 @@
 {
-  "description": "Parse nginx combined access log format for orion-microcrm",
+  "description": "Parse nginx access log for orion-microcrm (with optional request_time for KPI3)",
   "processors": [
     {
       "grok": {
         "field": "message",
         "patterns": [
-          "%{IPORHOST:client_ip} - - \\[%{HTTPDATE:timestamp_nginx}\\] \"%{WORD:http_method} %{URIPATHPARAM:request_uri} HTTP/%{NUMBER:http_version}\" %{NUMBER:http_status:int} %{NUMBER:bytes_sent:int} \"%{DATA:http_referer}\" \"%{DATA:http_user_agent}\""
+          "%{IPORHOST:client_ip} - %{DATA:remote_user} \\[%{HTTPDATE:timestamp_nginx}\\] \"%{WORD:http_method} %{URIPATHPARAM:request_uri} HTTP/%{NUMBER:http_version}\" %{NUMBER:http_status:int} %{NUMBER:bytes_sent:int} \"%{DATA:http_referer}\" \"%{DATA:http_user_agent}\" rt=%{NUMBER:request_time:float} urt=%{DATA:upstream_response_time}",
+          "%{IPORHOST:client_ip} - %{DATA:remote_user} \\[%{HTTPDATE:timestamp_nginx}\\] \"%{WORD:http_method} %{URIPATHPARAM:request_uri} HTTP/%{NUMBER:http_version}\" %{NUMBER:http_status:int} %{NUMBER:bytes_sent:int} \"%{DATA:http_referer}\" \"%{DATA:http_user_agent}\""
         ],
         "ignore_missing": true,
         "ignore_failure": true
@@ -31,6 +32,14 @@
       "convert": {
         "field": "bytes_sent",
         "type": "integer",
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "convert": {
+        "field": "request_time",
+        "type": "float",
         "ignore_missing": true,
         "ignore_failure": true
       }
