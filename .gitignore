@@ -34,3 +34,5 @@ misc/certs/
 
 
 ui-test
+
+misc/elk/logstash/logstash_output.log
