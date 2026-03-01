@@ -32,4 +32,9 @@ public class PersonRepositoryIntegrationTest {
 
         assertEquals(jdoe.getEmail(), found.get().getEmail());
     }
+
+    @Test
+    public void failedTest() {
+        assertEquals(1, 2);
+    }       
 }
