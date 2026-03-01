@@ -40,6 +40,8 @@ services:
       - ./misc/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./misc/elk/logstash/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
       - ./misc/elk/logstash/pipelines/:/usr/share/logstash/config/pipelines/:ro
+      - back-logs:/var/log/app:ro
+      - front-logs:/var/log/caddy:ro
       - ./docker/logstash/:/var/log/logstash:rw
     environment:
       - "LS_JAVA_OPTS=-Xmx1024m -Xms1024m"

@@ -4,3 +4,6 @@
 - pipeline.id: github-webhook-pipeline
   path.config: "/usr/share/logstash/config/pipelines/github.conf"
   queue.type: persisted
+- pipeline.id: back-logs-pipeline
+  path.config: "/usr/share/logstash/config/pipelines/back-logs.conf"
+  queue.type: persisted
