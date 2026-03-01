@@ -1,0 +1,6 @@
+- pipeline.id: nginx-log-pipeline
+  path.config: "/usr/share/logstash/config/pipelines/nginx.conf"
+  queue.type: persisted
+- pipeline.id: github-webhook-pipeline
+  path.config: "/usr/share/logstash/config/pipelines/github.conf"
+  queue.type: persisted

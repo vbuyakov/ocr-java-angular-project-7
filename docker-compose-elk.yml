@@ -37,13 +37,16 @@ services:
     image: docker.elastic.co/logstash/logstash:9.3.1
     container_name: ${ELK_PROJECT:-ocr-ja7}-logstash
     volumes:
-      - ./misc/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-      - ./misc/elk/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./misc/elk/logstash/:/var/log/logstash:rw
+      - ./misc/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./misc/elk/logstash/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+      - ./misc/elk/logstash/pipelines/:/usr/share/logstash/config/pipelines/:ro
+      - ./docker/logstash/:/var/log/logstash:rw
     environment:
       - "LS_JAVA_OPTS=-Xmx1024m -Xms1024m"
       - ELASTICSEARCH_USER=logstash_writer
       - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "127.0.0.1:${LOGSTASH_HTTP_PORT:-8002}:8002"
     networks:
       - elk
     depends_on:
@@ -51,8 +54,7 @@ services:
         condition: service_started
     # No ports exposed - Filebeat connects internally
     restart: on-failure
-    #entrypoint: ["bash", "-c", "bin/logstash-plugin install logstash-output-syslog && logstash -f /usr/share/logstash/pipeline/logstash.conf"]
-
+    
   kibana:
     image: docker.elastic.co/kibana/kibana:8.17.0
     container_name: ${ELK_PROJECT:-ocr-ja7}-kibana

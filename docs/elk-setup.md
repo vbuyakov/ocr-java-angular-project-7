@@ -72,6 +72,7 @@ Adapter dans Nginx : `proxy_pass http://127.0.0.1:5602`.
 | `misc/cicd/prod-up.sh` | Script de démarrage app + ELK en prod |
 | `misc/elk/filebeat.yml` | Collecte des logs nginx (orion-microcrm) via volume partagé |
 | `misc/elk/logstash.conf` | Pipeline Filebeat → ES |
+| `misc/elk/logstash/pipelines/github.conf` | Pipeline webhook GitHub → ES (voir [github-webhook-logstash.md](github-webhook-logstash.md)) |
 | `misc/elk/nginx-ocr-ja7-elk.conf` | Snippet Nginx (hôte) pour Kibana |
 
 ---
