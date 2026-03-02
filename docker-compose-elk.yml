@@ -42,7 +42,6 @@ services:
       - ./misc/elk/logstash/pipelines/:/usr/share/logstash/config/pipelines/:ro
       - back-logs:/var/log/app:ro
       - front-logs:/var/log/caddy:ro
-      - ./docker/logstash/:/var/log/logstash:rw
     environment:
       - "LS_JAVA_OPTS=-Xmx1024m -Xms1024m"
       - ELASTICSEARCH_USER=logstash_writer
