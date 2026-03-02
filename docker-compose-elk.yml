@@ -46,6 +46,9 @@ services:
       - "LS_JAVA_OPTS=-Xmx1024m -Xms1024m"
       - ELASTICSEARCH_USER=logstash_writer
       - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - LOGSTASH_HTTP_PORT=${LOGSTASH_HTTP_PORT:-8002}
+      - LOGSTASH_HTTP_USER=${LOGSTASH_HTTP_USER:-logstash_http}
+      - LOGSTASH_HTTP_PASSWORD=${LOGSTASH_HTTP_PASSWORD:-logstasgh_http_pass}
     ports:
       - "127.0.0.1:${LOGSTASH_HTTP_PORT:-8002}:8002"
     networks:
