@@ -2,6 +2,26 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+# [1.3.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.2.0...v1.3.0) (2026-03-02)
+
+
+### Bug Fixes
+
+* change filebeat approach ([7fe50e9](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/7fe50e90aae92433f701675956643aca1c036782))
+* change filebeat configuration to parse correctly nginx logs ([270f399](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/270f399cfc96eaad8736bb9de910beef12c866ce))
+* clean up redundant files ([0a14e04](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/0a14e0409170c23695b5579b93eaa73e697cd4c3))
+* iaaue with pass env into logstash config ([6840eb6](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/6840eb642ce247073980e22df4a32d8d4a8b327a))
+* kibana dashboards ([8107614](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/81076142bf077c5a4552244fd2494e796627e796))
+* return accendatelly deleted file ([de7e4b6](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/de7e4b60c66932f28522eaf669801275d93e8ca6))
+* script pat ([14d2c89](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/14d2c8971f615596cdf7d0fd112d6c515fb2e83b))
+
+
+### Features
+
+* add back logs to gistash ([d8189fa](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/d8189fa3c14dcd4c7a7b99f19f1850b246f725dc))
+* ELK github, nginx, backend ([9bce05e](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/9bce05ec1aece465fe16b94fffe0f16217a5273b))
+* github actions loging ([0d7e2b5](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/0d7e2b5854b1cbb29d845fd3290e4b8d1cc5dc74))
+
 # [1.2.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.1.0...v1.2.0) (2026-02-23)
 
 
