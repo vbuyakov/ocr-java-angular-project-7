@@ -1,6 +1,8 @@
 // Karma configuration file, see link for more information
 // https://karma-runner.github.io/1.0/config/configuration-file.html
 
+const path = require("path");
+
 module.exports = function (config) {
   config.set({
     basePath: "",
@@ -10,6 +12,7 @@ module.exports = function (config) {
       require("karma-chrome-launcher"),
       require("karma-jasmine-html-reporter"),
       require("karma-coverage"),
+      require("karma-junit-reporter"),
       require("@angular-devkit/build-angular/plugins/karma"),
     ],
     client: {
@@ -25,11 +28,16 @@ module.exports = function (config) {
       suppressAll: true, // removes the duplicated traces
     },
     coverageReporter: {
-      dir: require("path").join(__dirname, "./coverage/microcrm"),
+      dir: path.join(__dirname, "./coverage/microcrm"),
       subdir: ".",
       reporters: [{ type: "html" }, { type: "text-summary" }],
     },
-    reporters: ["progress", "kjhtml"],
+    junitReporter: {
+      outputDir: path.join(__dirname, "../test-results"),
+      outputFile: "TESTS-frontend.xml",
+      useBrowserName: false,
+    },
+    reporters: ["progress", "kjhtml", "junit"],
     browsers: ["ChromeHeadlessNoSandbox"],
     customLaunchers: {
       ChromeHeadlessNoSandbox: {

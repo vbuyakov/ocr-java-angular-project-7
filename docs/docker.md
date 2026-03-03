@@ -78,10 +78,10 @@ Le fichier `.dockerignore` exclut les répertoires inutiles (`.gradle`, `build`,
 ### Structure des services
 
 ```
-┌─────────┐     ┌─────────┐     ┌────────────┐
-│  nginx  │────▶│  front  │     │    back    │
-│  :80    │     │ (Caddy) │     │  (Spring)  │
-└─────────┘     └─────────┘     └────────────┘
+┌─────────┐     ┌─────────┐     ┌────────────┐     ┌──────────┐
+│  nginx  │────▶│  front  │     │    back    │────▶│ postgres │
+│  :80    │     │ (Caddy) │     │  (Spring)  │     │  :5432   │
+└─────────┘     └─────────┘     └────────────┘     └──────────┘
       │                │                │
       └────────────────┴────────────────┘
                    orioncrm
@@ -90,6 +90,7 @@ Le fichier `.dockerignore` exclut les répertoires inutiles (`.gradle`, `build`,
 - **nginx** : reverse-proxy principal, seul service exposé sur le port (`APP_PORT`, défaut 80).
 - **front** : application Angular servie par Caddy.
 - **back** : API Spring Boot, accessible uniquement via le réseau interne.
+- **postgres** : base de données PostgreSQL (profil `prod`), volume `postgres-data`.
 
 ### Démarrage
 
@@ -137,6 +138,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 |----------|--------|-------------|
 | `APP_PORT` | `80` | Port exposé pour nginx |
 | `SPRING_APP_NAME` | `microcrm` | Nom de l’application Spring |
+| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | — | Connexion PostgreSQL (profil prod) |
 | `DOCKER_NETWORK` | `orion-microcrm_network` | Nom du réseau Docker |
 | `DOCKER_NETWORK_EXTERNAL` | `false` | Si `true`, le réseau doit déjà exister |
 | `BACK_IMAGE` | `ghcr.io/...-back:latest` | Image backend (prod overlay) |

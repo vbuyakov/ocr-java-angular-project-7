@@ -164,7 +164,7 @@ Cinq KPIs complémentaires aux métriques DORA, adaptés à la taille et aux enj
 
 **Source ELK** : champ `request_time` dans les logs Nginx (après mise à jour du log_format) / logs Spring Boot (format JSON logback).
 
-**Analyse actuelle** : Spring Boot avec H2 en mémoire (profil dev par défaut). Les temps de réponse sont naturellement faibles sur une base en mémoire, mais une bascule vers une base persistante (PostgreSQL) en prod modifierait significativement ce KPI.
+**Analyse actuelle** : Spring Boot avec PostgreSQL en production (profil `prod`). Les temps de réponse sont mesurés sur une base persistante ; les latences peuvent varier selon la charge et la taille des données.
 
 **Anomalie à surveiller** : latences anormalement élevées après un déploiement (JVM warmup Spring Boot : les 10 premières requêtes post-redémarrage peuvent être lentes en raison du chargement des classes).
 

@@ -4,12 +4,25 @@
 
 # MicroCRM (P7 - Développeur Full-Stack - Java et Angular - Mettez en œuvre l'intégration et le déploiement continu d'une application Full-Stack)
 
-MicroCRM est une application de démonstration basique ayant pour être objectif de servir de socle pour le module "P7 - Développeur Full-Stack".
+MicroCRM est une application de démonstration basique ayant pour objectif de servir de socle pour le module "P7 - Développeur Full-Stack".
 
-L'application MicroCRM est une implémentation simplifiée d'un ["CRM" (Customer Relationship Management)](https://fr.wikipedia.org/wiki/Gestion_de_la_relation_client). Les fonctionnalités sont limitées à la création, édition et la visualisations des individus liés à des organisations.
+L'application MicroCRM est une implémentation simplifiée d'un ["CRM" (Customer Relationship Management)](https://fr.wikipedia.org/wiki/Gestion_de_la_relation_client). Les fonctionnalités sont limitées à la création, édition et la visualisation des individus liés à des organisations.
 
 ![Page d'accueil](./misc/screenshots/screenshot_1.png)
 ![Édition de la fiche d'un individu](./misc/screenshots/screenshot_2.png)
+
+## Choix techniques
+
+| Composant | Choix | Justification |
+|-----------|-------|---------------|
+| **CI/CD** | GitHub Actions | Intégration native, workflows YAML, gratuit pour dépôts publics |
+| **Workflows** | CI → Release → Docker Image | Chaînage : tests + SonarQube, versioning (semantic-release), build/push images GHCR, déploiement SSH |
+| **Conteneurisation** | Docker + Docker Compose | Back (Temurin 17), front (Caddy), nginx (reverse proxy). Multi-stage build, utilisateur non-root. |
+| **Qualité** | SonarQube Cloud | Analyse statique back/front, Quality Gate, détection vulnérabilités |
+| **Monitoring** | Stack ELK | Logs nginx, backend, GitHub Actions → Kibana (dashboards, métriques DORA) |
+| **Release** | semantic-release | Versioning automatique (Conventional Commits), CHANGELOG, tags GitHub |
+
+Détails : [docs/docker.md](docs/docker.md), [docs/ci-setup.md](docs/ci-setup.md), [docs/cd-setup.md](docs/cd-setup.md).
 
 ## Code source
 
@@ -84,22 +97,24 @@ Puis ouvrir l'URL http://localhost:4200 dans votre navigateur.
 
 ### Exécution des tests
 
+**Script unifié** (depuis la racine du projet) :
+
+```shell
+./misc/cicd/run-tests.sh angular    # Tests frontend
+./misc/cicd/run-tests.sh springboot # Tests backend
+./misc/cicd/run-tests.sh all        # Les deux
+```
+
 #### Client
 
-**Dépendances**
-
-- Google Chrome ou Chromium
-
-Dans votre terminal:
+**Dépendances** : Google Chrome ou Chromium
 
 ```shell
 cd front
-CHROME_BIN=</path/to/google/chrome> npm test
+npm test
 ```
 
 #### Serveur
-
-Dans votre terminal:
 
 ```shell
 cd back
@@ -108,51 +123,20 @@ cd back
 
 ### Images Docker
 
-#### Client
-
-##### Construire l'image
+**Docker Compose** utilise les Dockerfiles dédiés (`back/Dockerfile`, `front/Dockerfile`). Pour construire l'ensemble :
 
 ```shell
-docker build --target front -t orion-microcrm-front:latest .
+docker compose build
 ```
 
-##### Exécuter l'image
+**Build manuel** (Dockerfiles dédiés) :
 
-```shell
-docker run -it --rm -p 80:80 -p 443:443 orion-microcrm-front:latest
-```
+| Service | Construire | Exécuter |
+|---------|------------|----------|
+| Front | `docker build -f front/Dockerfile -t orion-microcrm-front:latest .` | `docker run -it --rm -p 80:80 orion-microcrm-front:latest` |
+| Back | `docker build -f back/Dockerfile -t orion-microcrm-back:latest .` | `docker run -it --rm -p 8080:8080 orion-microcrm-back:latest` |
 
-L'application sera disponible sur https://localhost.
-
-#### Serveur
-
-##### Construire l'image
-
-```shell
-docker build --target back -t orion-microcrm-back:latest .
-```
-
-##### Exécuter l'image
-
-```shell
-docker run -it --rm -p 8080:8080 orion-microcrm-back:latest
-```
-
-L'API sera disponible sur http://localhost:8080.
-
-#### Tout en un
-
-```shell
-docker build --target standalone -t orion-microcrm-standalone:latest .
-```
-
-##### Exécuter l'image
-
-```shell
-docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:latest
-```
-
-L'application sera disponible sur https://localhost et l'API sur http://localhost:8080.
+**Recommandé** : utiliser `docker compose up -d` pour lancer l'application complète (back + front + nginx).
 
 ### Docker Compose
 
@@ -175,24 +159,21 @@ cp .env.example .env
 
 #### Lancer l'application
 
-**Base :**
+| Mode | Commande | Accès |
+|------|----------|-------|
+| **Base** | `docker compose up -d` | http://localhost |
+| **Dev** (port personnalisable) | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | http://localhost |
+| **Production** (images GHCR) | `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build` | Selon config Nginx |
+| **Prod via script** | `./misc/cicd/prod-up.sh` ou `--app-only` / `--elk-only` | Voir [docs/prod-deploy.md](docs/prod-deploy.md) |
 
-```shell
-docker compose up -d
-```
+**Prérequis production** : `docker login ghcr.io` (token avec `read:packages`).
 
-**Dev (port personnalisable) :**
+#### Pipeline CI/CD (workflows GitHub Actions)
 
-```shell
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
+| Workflow | Fichier | Rôle |
+|----------|---------|------|
+| **CI** | [ci.yml](.github/workflows/ci.yml) | Tests back/front, build, SonarQube — sur push et PR |
+| **Release** | [release.yml](.github/workflows/release.yml) | Versioning (semantic-release), CHANGELOG — après CI sur `main` |
+| **Docker Image** | [docker-image.yml](.github/workflows/docker-image.yml) | Build/push images GHCR, déploiement SSH — après Release |
 
-Accès sur http://localhost
-
-#### Pipeline CD (images Docker)
-
-Les images sont construites et publiées automatiquement vers **GitHub Container Registry** (ghcr.io) via le workflow [docker-image.yml](.github/workflows/docker-image.yml). Voir [docs/cd-setup.md](docs/cd-setup.md) pour la configuration.
-
-#### Releases (semantic-release)
-
-Les releases GitHub sont créées automatiquement sur push vers `main` via le workflow [release.yml](.github/workflows/release.yml). Règles de commit et workflow détaillé : [docs/release-workflow.md](docs/release-workflow.md).
+Configuration : [docs/ci-setup.md](docs/ci-setup.md), [docs/cd-setup.md](docs/cd-setup.md), [docs/release-workflow.md](docs/release-workflow.md).

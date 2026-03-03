@@ -29,13 +29,16 @@ yarn-error.log*
 # Test output (CI/CD)
 test-results/
 
+# Java/Gradle build output (IDE may use bin/)
+back/bin/
+
 # SSL certificates (dev self-signed, prod paths)
 misc/certs/
 
 
-ui-test
 
 misc/elk/logstash/logstash_output.log
 docker/logstash/*
 
-
+ui-test
+docs_tech
