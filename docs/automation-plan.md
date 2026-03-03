@@ -102,7 +102,8 @@ Ces règles sont configurées dans *Settings → Branches → Branch protection 
 
 ### 3.2 Rôle de docker-compose
 
-- **Orchestration locale et dev** : lancer back, front, nginx en une commande
+- **Orchestration locale et prod** : lancer postgres, back, front, nginx en une commande
+- **Base de données** : service `postgres` (PostgreSQL 16), volume `postgres-data` pour la persistance
 - **Réseau isolé** (`orion-microcrm_network`) pour éviter les conflits avec d'autres apps sur le serveur
 - **Overlay dev** : `docker-compose.dev.yml` pour personnaliser les ports
 - **Variables d'environnement** : `.env` et `.env.example` pour configurer ports, réseau, etc.

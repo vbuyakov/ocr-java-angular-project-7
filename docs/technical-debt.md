@@ -28,7 +28,7 @@ L'analyse SonarCloud est déclenchée par le job `sonarqube-back` du workflow `c
 | **Couverture** | Tests JUnit couvrant `PersonRepository` et `MicroCRMApplication`. Les contrôleurs REST et services métier peuvent avoir une couverture insuffisante si seule la couche repository est testée. | Moyenne |
 | **Code smells** | Relations many-to-many (Organizations ↔ Persons) impliquent des risques de cycles de chargement JPA (`FetchType.EAGER` implicite ou boucles de sérialisation JSON). | Moyenne |
 | **Sécurité** | Absence visible de configuration de sécurité HTTP (Spring Security) : endpoints API potentiellement non protégés en production. | Haute |
-| **Bugs potentiels** | H2 en mémoire utilisé comme base par défaut (profil Spring Boot sans `spring.datasource` explicite) : les données sont perdues à chaque redémarrage du container. | **Critique** |
+| **Bugs potentiels** | ~~H2 en mémoire~~ — **Résolu** : PostgreSQL utilisé en prod (profil `prod`, service `postgres` dans docker-compose). | — |
 | **Dépendances** | Gradle + Spring Boot 3 avec Java 17 : vérifier les dépendances transitives signalées par SonarQube ou un `./gradlew dependencyCheckAnalyze`. | Basse |
 
 ### 2.2 Frontend – Angular 17 / TypeScript
@@ -47,55 +47,9 @@ L'analyse est déclenchée par le job `sonarqube-front` via l'action `SonarSourc
 
 ---
 
-## 3. Point critique identifié : persistance des données en production
+## 3. Persistance des données en production — résolu
 
-### 3.1 Problème
-
-Spring Boot configure **H2 en mémoire** par défaut lorsqu'aucune source de données n'est explicitement définie. Or, dans l'architecture actuelle :
-
-- L'application tourne dans un container Docker
-- Chaque `docker compose up` ou redémarrage du container **efface toutes les données** (organizations, persons, relations)
-- Le workflow CD (`docker-image.yml`) déclenche automatiquement `./misc/cicd/prod-up.sh --app-only` à chaque release, ce qui implique un redémarrage régulier des containers
-
-**Impact** : en production (ocr-ja7.buyakov.com), toute donnée créée par les utilisateurs est perdue à chaque déploiement automatique — soit plusieurs fois par semaine selon le CHANGELOG.
-
-### 3.2 Conséquences mesurées
-
-| Conséquence | Lien DORA/KPI |
-|-------------|--------------|
-| Données perdues à chaque déploiement | Impacte la confiance utilisateur (KPI disponibilité réelle) |
-| Impossibilité de tester des scénarios persistants en prod | Masque les bugs de régression liés aux données existantes |
-| Absence de sauvegarde possible (données volatiles) | Rend le plan de sauvegarde partiellement inopérant |
-| CFR sous-estimé : les déploiements réussissent techniquement mais causent une perte de données silencieuse | CFR réel probablement supérieur à 25% |
-
-### 3.3 Correction préconisée
-
-**Option 1 – Court terme (profil `prod` avec H2 fichier)** :
-
-```properties
-# back/src/main/resources/application-prod.properties
-spring.datasource.url=jdbc:h2:file:/data/microcrm;AUTO_SERVER=TRUE
-spring.datasource.driver-class-name=org.h2.Driver
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Monter un volume Docker pour `/data` :
-
-```yaml
-# docker-compose.prod.yml
-services:
-  back:
-    volumes:
-      - microcrm-data:/data
-volumes:
-  microcrm-data:
-```
-
-**Option 2 – Long terme (PostgreSQL)** :
-
-Migrer vers PostgreSQL avec un container dédié ou un service managé. Nécessite l'ajout de la dépendance `spring-boot-starter-data-jpa` + driver PostgreSQL et une migration Flyway/Liquibase.
-
-**Effort** : Option 1 = 2–3 heures. Option 2 = 1–2 jours.
+**PostgreSQL** est désormais utilisé en production : service `postgres` dans docker-compose, profil Spring `prod`, variables `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` dans `.env`. Les données sont persistées dans le volume `postgres-data`. Sauvegarde et restauration via `pg_dump` / `pg_restore` (voir [prod-deploy.md](prod-deploy.md)).
 
 ---
 
@@ -133,7 +87,7 @@ Le MTTR de ~3 jours pour les incidents ELK (vs < 4 heures pour l'app) reflète :
 
 | # | Item de dette | Catégorie | Impact | Effort | Priorité |
 |---|--------------|-----------|--------|--------|---------|
-| 1 | **Base de données H2 en mémoire en prod** (perte de données) | Architecture | Critique | Faible (H2 fichier) / Moyen (PostgreSQL) | **P0** |
+| 1 | ~~Base de données H2 en mémoire en prod~~ | Architecture | — | **Résolu** (PostgreSQL) | ✓ |
 | 2 | **Absence de sécurité API** (endpoints non protégés) | Sécurité | Haute | Moyen (Spring Security basic) | **P1** |
 | 3 | **Absence de smoke tests post-déploiement** | CI/CD | Haute | Faible | **P1** |
 | 4 | **Absence d'alerting ELK** (pas de Watcher Kibana) | Monitoring | Moyenne | Faible | **P2** |
@@ -146,14 +100,9 @@ Le MTTR de ~3 jours pour les incidents ELK (vs < 4 heures pour l'app) reflète :
 
 ## 6. Préconisations par priorité
 
-### P0 – Critique (à traiter immédiatement)
+### P0 – Critique — ✓ Résolu
 
-**Migrer la base de données vers H2 fichier ou PostgreSQL**
-
-1. Créer `back/src/main/resources/application-prod.properties` avec `jdbc:h2:file:/data/microcrm`
-2. Ajouter le volume `microcrm-data` dans `docker-compose.prod.yml`
-3. Ajouter le plan de sauvegarde documenté (voir [prod-deploy.md](prod-deploy.md))
-4. Tester le redémarrage : vérifier la persistance des données après `docker compose restart back`
+**PostgreSQL en production** : `application-prod.properties`, service `postgres`, volume `postgres-data`, sauvegarde `pg_dump`/`pg_restore` documentée dans [prod-deploy.md](prod-deploy.md).
 
 ---
 
@@ -216,7 +165,7 @@ Mesurer la dette à intervalles réguliers :
 
 | Indicateur | Cible 1 mois | Cible 3 mois |
 |-----------|-------------|-------------|
-| H2 fichier ou PostgreSQL en prod | ✓ | ✓ PostgreSQL |
+| PostgreSQL en prod | ✓ | ✓ |
 | CFR (DORA) | < 15% | < 10% |
 | Couverture tests (SonarQube) | > 60% | > 75% |
 | Smoke tests post-déploiement | ✓ | ✓ |

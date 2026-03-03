@@ -244,21 +244,26 @@ sudo nginx -t && sudo systemctl reload nginx
 
 | Donnée | Emplacement | Criticité |
 |--------|-------------|-----------|
-| **Base de données applicative** | Volume Docker `microcrm-data` (H2 fichier ou PostgreSQL) | Haute |
+| **Base de données PostgreSQL** | Volume Docker `postgres-data` | Haute |
 | **Configuration** | Fichier `.env` à la racine du projet | Haute |
 | **Certificats SSL** | `/etc/letsencrypt/live/` | Haute |
-| **Index Elasticsearch** | Volume Docker `ocr-ja7-esdata` | Basse (logs reconstructibles) |
+| **Index Elasticsearch** | Volume Docker `ocr-ja7-elasticsearch-data` | Basse (logs reconstructibles) |
 | **Configuration Nginx** | `/etc/nginx/sites-available/` | Moyenne |
 
-> **Prérequis** : la base de données doit être configurée en mode fichier persistant (`jdbc:h2:file:/data/microcrm`) ou PostgreSQL avec un volume Docker nommé. Avec H2 en mémoire (configuration par défaut), aucune sauvegarde des données applicatives n'est possible.
+> La base de données utilise PostgreSQL (service `postgres` dans docker-compose). Les variables `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` sont définies dans `.env`.
 
 ---
 
-### Sauvegarde automatisée (cron)
+### Sauvegarde (pg_dump)
 
-Le script suivant est déposé sur le serveur de production dans `/opt/scripts/backup-microcrm.sh` et exécuté automatiquement chaque nuit.
+```bash
+# Depuis la racine du projet (conteneur postgres en cours d'exécution)
+mkdir -p backups
+docker compose exec postgres pg_dump -U ${DB_USER:-postgres} -d ${DB_NAME:-microcrm} -F c -f /tmp/microcrm_backup.dump
+docker compose cp postgres:/tmp/microcrm_backup.dump ./backups/microcrm_$(date +%Y%m%d_%H%M).dump
+```
 
-**Script `/opt/scripts/backup-microcrm.sh` :**
+**Script automatisé** (`/opt/scripts/backup-microcrm.sh`) — à exécuter depuis la racine du projet :
 
 ```bash
 #!/bin/bash
@@ -267,115 +272,44 @@ set -euo pipefail
 BACKUP_DIR="/opt/backups/microcrm"
 DATE=$(date +%Y-%m-%d_%H-%M)
 RETENTION_DAYS=30
+PROJECT_ROOT="${PROD_APP_PATH:-$(pwd)}"
 
 mkdir -p "$BACKUP_DIR"
+cd "$PROJECT_ROOT"
 
-# 1. Sauvegarde du volume de base de données
-docker run --rm \
-  -v microcrm-data:/data:ro \
-  -v "$BACKUP_DIR":/backup \
-  alpine tar czf "/backup/db-$DATE.tar.gz" -C /data .
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U ${DB_USER:-postgres} -d ${DB_NAME:-microcrm} -F c > "$BACKUP_DIR/db-$DATE.dump"
 
-# 2. Sauvegarde de la configuration
-cp /opt/app/microcrm/.env "$BACKUP_DIR/env-$DATE.bak"
-
-# 3. Sauvegarde des certificats SSL
+cp .env "$BACKUP_DIR/env-$DATE.bak" 2>/dev/null || true
 tar czf "$BACKUP_DIR/ssl-$DATE.tar.gz" /etc/letsencrypt/live/ 2>/dev/null || true
-
-# 4. Purge des sauvegardes de plus de RETENTION_DAYS jours
 find "$BACKUP_DIR" -type f -mtime +$RETENTION_DAYS -delete
 
-echo "[$(date)] Sauvegarde terminée : $BACKUP_DIR/db-$DATE.tar.gz"
+echo "[$(date)] Sauvegarde terminée : $BACKUP_DIR/db-$DATE.dump"
 ```
 
-**Installation du cron :**
-
-```bash
-# Rendre le script exécutable
-sudo chmod +x /opt/scripts/backup-microcrm.sh
-
-# Ajouter la tâche cron (sauvegarde chaque nuit à 02h00)
-sudo crontab -e
-# Ajouter la ligne :
-# 0 2 * * * /opt/scripts/backup-microcrm.sh >> /var/log/microcrm-backup.log 2>&1
-```
-
-**Vérification des sauvegardes :**
-
-```bash
-# Lister les sauvegardes disponibles
-ls -lh /opt/backups/microcrm/
-
-# Vérifier l'intégrité d'une archive
-tar tzf /opt/backups/microcrm/db-2026-02-24_02-00.tar.gz
-```
+**Cron** : `0 2 * * * /opt/scripts/backup-microcrm.sh >> /var/log/microcrm-backup.log 2>&1`
 
 ---
 
-### Procédure de restauration automatisée
-
-La restauration peut être déclenchée manuellement ou intégrée dans un script de rollback post-déploiement.
-
-**Script `/opt/scripts/restore-microcrm.sh` :**
+### Restauration (pg_restore)
 
 ```bash
-#!/bin/bash
-set -euo pipefail
+# Depuis la racine du projet (ou PROD_APP_PATH)
+# Fichier : ./backups/microcrm_*.dump (manuel) ou /opt/backups/microcrm/db-*.dump (cron)
 
-BACKUP_DIR="/opt/backups/microcrm"
-
-# Utiliser la dernière sauvegarde si aucun fichier n'est passé en argument
-BACKUP_FILE="${1:-$(ls -t "$BACKUP_DIR"/db-*.tar.gz | head -1)}"
-
-if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
-  echo "ERREUR : aucune sauvegarde trouvée dans $BACKUP_DIR"
-  exit 1
-fi
-
-echo "Restauration depuis : $BACKUP_FILE"
-
-# 1. Arrêter l'application (back uniquement, nginx reste actif)
-cd /opt/app/microcrm
+# 1. Arrêter le back
 docker compose -f docker-compose.yml -f docker-compose.prod.yml stop back
 
-# 2. Vider le volume et restaurer les données
-docker run --rm \
-  -v microcrm-data:/data \
-  -v "$BACKUP_DIR":/backup:ro \
-  alpine sh -c "rm -rf /data/* && tar xzf /backup/$(basename "$BACKUP_FILE") -C /data"
+# 2. Restaurer le dump (ex. /opt/backups/microcrm/db-YYYY-MM-DD_HH-MM.dump)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+  pg_restore -U ${DB_USER:-postgres} -d ${DB_NAME:-microcrm} --clean --if-exists < /chemin/vers/dump.dump
 
-# 3. Redémarrer l'application
+# 3. Redémarrer le back
 docker compose -f docker-compose.yml -f docker-compose.prod.yml start back
 
-# 4. Smoke test post-restauration
-sleep 10
-if curl -sf http://localhost:8080/actuator/health > /dev/null; then
-  echo "Restauration réussie. Application opérationnelle."
-else
-  echo "ATTENTION : smoke test échoué après restauration. Vérifier les logs."
-  docker logs orion-microcrm-back-1 --tail 30
-  exit 1
-fi
+# 4. Smoke test
+curl -f http://localhost:8080/actuator/health
 ```
-
-**Utilisation :**
-
-```bash
-# Restaurer depuis la dernière sauvegarde automatiquement
-sudo /opt/scripts/restore-microcrm.sh
-
-# Restaurer depuis une archive spécifique
-sudo /opt/scripts/restore-microcrm.sh /opt/backups/microcrm/db-2026-02-20_02-00.tar.gz
-```
-
-**Test hebdomadaire de la restauration (automatisé) :**
-
-```bash
-# Cron test de restauration chaque dimanche à 03h00 (hors heures de pointe)
-# 0 3 * * 0 /opt/scripts/restore-microcrm.sh >> /var/log/microcrm-restore-test.log 2>&1
-```
-
-> Ce test hebdomadaire valide que la sauvegarde est fonctionnelle et que la procédure de restauration ne régresse pas entre les mises à jour.
 
 ---
 
@@ -385,10 +319,10 @@ Pour éviter la perte des sauvegardes en cas de défaillance du serveur, copier 
 
 ```bash
 # Exemple : copie vers un second serveur via rsync (à ajouter à backup-microcrm.sh)
-rsync -az "$BACKUP_DIR/" user@backup-server:/backups/microcrm/
+rsync -az /opt/backups/microcrm/ user@backup-server:/backups/microcrm/
 
 # Exemple : copie vers S3-compatible (rclone)
-rclone copy "$BACKUP_DIR/" s3:bucket-name/microcrm-backups/
+rclone copy /opt/backups/microcrm/ s3:bucket-name/microcrm-backups/
 ```
 
 ---
