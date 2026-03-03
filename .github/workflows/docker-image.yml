@@ -81,6 +81,7 @@ jobs:
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
+            set -e
             cd ${{ vars.PROD_APP_PATH }}
             git pull
             chmod +x misc/cicd/prod-up.sh
