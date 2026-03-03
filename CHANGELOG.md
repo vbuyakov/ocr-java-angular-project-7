@@ -2,6 +2,13 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+## [1.3.1](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.3.0...v1.3.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* Stop prod deploy on error ([1222a00](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/1222a0090d13a7793fff132de5b2193d69ba4ccc))
+
 # [1.3.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.2.0...v1.3.0) (2026-03-02)
 
 
