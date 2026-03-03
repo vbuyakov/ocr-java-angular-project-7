@@ -33,9 +33,9 @@ test-results/
 misc/certs/
 
 
-ui-test
 
 misc/elk/logstash/logstash_output.log
 docker/logstash/*
 
-
+ui-test
+docs_tech

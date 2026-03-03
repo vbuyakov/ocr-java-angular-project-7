@@ -13,6 +13,15 @@
 services:
   back:
     image: ${BACK_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-back:latest}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    volumes:
+      - back-logs:/var/log/app
+      - microcrm-data:/data
 
   front:
     image: ${FRONT_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-front:latest}
+
+volumes:
+  microcrm-data:
+    name: ${ELK_PROJECT:-ocr-ja7}-microcrm-data

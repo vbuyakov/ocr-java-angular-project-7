@@ -52,6 +52,8 @@ volumes:
     name: ${ELK_PROJECT:-ocr-ja7}-back-logs
   front-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-front-logs
+  microcrm-data:
+    name: ${ELK_PROJECT:-ocr-ja7}-microcrm-data
 
 networks:
   orioncrm:
