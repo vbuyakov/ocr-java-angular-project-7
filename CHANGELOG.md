@@ -2,6 +2,19 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+# [1.4.0](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.3.1...v1.4.0) (2026-03-03)
+
+
+### Bug Fixes
+
+* frontend tests result format to junit ([7a130ad](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/7a130ad971f1133c101ec6640c4198ee417b713f))
+* update docs to use PostgreSQL ([2f636e3](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/2f636e3e41268a7b0f67673e8eff904a0ef6e067))
+
+
+### Features
+
+* Switch to PostgreSQL as app storage ([683588c](https://github.com/vbuyakov/ocr-java-angular-project-7/commit/683588c416aa30c946503a596d76b89edde0fed5))
+
 ## [1.3.1](https://github.com/vbuyakov/ocr-java-angular-project-7/compare/v1.3.0...v1.3.1) (2026-03-03)
 
 
