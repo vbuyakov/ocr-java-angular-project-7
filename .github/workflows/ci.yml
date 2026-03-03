@@ -63,7 +63,6 @@ jobs:
         with:
           name: test-results-front
           path: test-results/
-        continue-on-error: true
 
   build-back:
     name: Build Backend
