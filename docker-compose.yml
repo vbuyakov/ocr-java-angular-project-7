@@ -1,6 +1,22 @@
 name: orion-microcrm
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-microcrm}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-microcrm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orioncrm
+
   back:
     build:
       context: .
@@ -9,8 +25,16 @@ services:
     environment:
       SPRING_APPLICATION_NAME: ${SPRING_APP_NAME:-microcrm}
       LOGGING_FILE_PATH: /var/log/app
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-microcrm}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
       - back-logs:/var/log/app
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/profile"]
       interval: 10s
@@ -46,14 +70,14 @@ services:
       - orioncrm
 
 volumes:
+  postgres-data:
+    name: ${ELK_PROJECT:-ocr-ja7}-postgres-data
   nginx-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-nginx-logs
   back-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-back-logs
   front-logs:
     name: ${ELK_PROJECT:-ocr-ja7}-front-logs
-  microcrm-data:
-    name: ${ELK_PROJECT:-ocr-ja7}-microcrm-data
 
 networks:
   orioncrm:

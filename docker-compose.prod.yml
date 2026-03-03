@@ -11,17 +11,38 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-microcrm}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-microcrm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   back:
     image: ${BACK_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-back:latest}
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-microcrm}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
       - back-logs:/var/log/app
-      - microcrm-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   front:
     image: ${FRONT_IMAGE:-ghcr.io/vbuyakov/ocr-java-angular-project-7-front:latest}
 
 volumes:
-  microcrm-data:
-    name: ${ELK_PROJECT:-ocr-ja7}-microcrm-data
+  postgres-data:
+    name: ${ELK_PROJECT:-ocr-ja7}-postgres-data
